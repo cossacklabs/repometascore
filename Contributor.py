@@ -14,9 +14,9 @@ class Contributor:
 
     # detailed info from profile
     location: str = str()
-    email: str = str()
+    email: List[str]
     twitter_username: str = str()
-    name: str = str()
+    name: List[str]
     company: str = str()
     blog: str = str()
     bio: str = str()
@@ -31,6 +31,13 @@ class Contributor:
     triggeredRulesDesc: List[str]
 
     def __init__(self, input_dict=None):
+        # Lol, need to explicitly create new list
+        # otherwise it just copies pointers to list
+        # and all objects of that class
+        # would have accumulated triggeredRulesDesc list
+        self.triggeredRulesDesc = list()
+        self.email = list()
+        self.name = list()
         if input_dict:
             self.addValue(input_dict)
         return
@@ -40,11 +47,6 @@ class Contributor:
     # We would add them and rewrite
     # Old object values
     def addValue(self, input_dict: dict):
-        # Lol, need to explicitly create new list
-        # otherwise it just copies pointers to list
-        # and all objects of that class
-        # would have accumulated triggeredRulesDesc list
-        self.triggeredRulesDesc = list()
         # Check whether we have dict as input
         if type(input_dict) is not dict:
             return
@@ -77,9 +79,11 @@ class Contributor:
             if input_dict.get('location') and type(input_dict.get('location')) is str and \
                input_dict.get('location') is not str() else self.location
 
-        self.email = input_dict['email'] \
+        email = input_dict['email'] \
             if input_dict.get('email') and type(input_dict.get('email')) is str and \
-               input_dict.get('email') is not str() else self.email
+               input_dict.get('email') is not str() else None
+        if email and email not in self.email:
+            self.email.append(email)
 
         self.twitter_username = input_dict['twitter'] \
             if input_dict.get('twitter') and type(input_dict.get('twitter')) is str and \
@@ -89,9 +93,11 @@ class Contributor:
             if input_dict.get('twitter_username') and type(input_dict.get('twitter_username')) is str and \
                input_dict.get('twitter_username') is not str() else self.twitter_username
 
-        self.name = input_dict['name'] \
+        name = input_dict['name'] \
             if input_dict.get('name') and type(input_dict.get('name')) is str and \
-               input_dict.get('name') is not str() else self.name
+               input_dict.get('name') is not str() else None
+        if name and name not in self.name:
+            self.name.append(name)
 
         self.company = input_dict['company'] \
             if input_dict.get('company') and type(input_dict.get('company')) is str and \

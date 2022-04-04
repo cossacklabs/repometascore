@@ -87,6 +87,7 @@ class RiskyRepo:
             f"Risky commits ratio: {self.risky_commits / self.commits} \t"
             f"Risky delta ratio: {self.risky_delta / self.delta}"
         )
+        print(f"{self.risky_contributors}/{self.contributors} contributors are risky")
 
         if self.riskyAuthor:
             print("=" * 40)
