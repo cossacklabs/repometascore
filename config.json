@@ -1,0 +1,242 @@
+{
+  "risk_border_value": 0.5,
+  "git_token": "github_token",
+  "fields": [
+    {
+      "name": "location",
+      "type": "",
+      "rules": [
+        {
+          "triggers": [
+            "russia",
+            "россия",
+            "rossiya"
+          ],
+          "type": "Strong",
+          "risk_value": 1.0
+        },
+        {
+          "triggers": [
+            "rus",
+            "ros",
+            "ru",
+            "ру",
+            "rf",
+            "рф"
+          ],
+          "type": "Weak",
+          "risk_value": 1.0
+        }
+      ]
+    },
+    {
+      "name": "emails",
+      "type": [],
+      "rules": [
+        {
+          "triggers": [
+            "yandex",
+            "rambler",
+            "russia",
+            "rossiya",
+            "rambler.ru",
+            "lenta.ru",
+            "autorambler.ru",
+            "myrambler.ru",
+            "ro.ru",
+            "rambler.ua",
+            "mail.ua",
+            "mail.ru",
+            "internet.ru",
+            "bk.ru",
+            "inbox.ru",
+            "list.ru",
+            "yandex.ru",
+            "ya.ru"
+          ],
+          "type": "Strong",
+          "risk_value": 1.0
+        },
+        {
+          "triggers": [
+            ".rus.",
+            ".ros.",
+            ".ru.",
+            ".rf.",
+            ".rus",
+            ".ros",
+            ".ru",
+            ".rf"
+          ],
+          "type": "Considerable",
+          "risk_value": 1.0
+        }
+      ]
+    },
+    {
+      "name": "login",
+      "type": "",
+      "rules": [
+        {
+          "triggers": [
+            "russia",
+            "rossiya",
+            "rambler",
+            "yandex"
+          ],
+          "type": "Strong",
+          "risk_value": 1.0
+        },
+        {
+          "triggers": [
+            "rus",
+            "ros",
+            "ru",
+            "rf"
+          ],
+          "type": "Weak",
+          "risk_value": 1.0
+        }
+      ]
+    },
+    {
+      "name": "twitter_username",
+      "type": "",
+      "rules": [
+        {
+          "triggers": [
+            "russia",
+            "rossiya",
+            "rambler",
+            "yandex"
+          ],
+          "type": "Strong",
+          "risk_value": 1.0
+        },
+        {
+          "triggers": [
+            "rus",
+            "ros",
+            "ru",
+            "rf"
+          ],
+          "type": "Weak",
+          "risk_value": 1.0
+        }
+      ]
+    },
+    {
+      "name": "blog",
+      "type": "",
+      "rules": [
+        {
+          "triggers": [
+            "russia",
+            "rossiya",
+            "rambler",
+            "yandex"
+          ],
+          "type": "Strong",
+          "risk_value": 1.0
+        },
+        {
+          "triggers": [
+            "rus",
+            "ros",
+            "ru",
+            "rf"
+          ],
+          "type": "Weak",
+          "risk_value": 1.0
+        }
+      ]
+    },
+    {
+      "name": "names",
+      "type": [],
+      "rules": [
+        {
+          "triggers": [
+            "russia",
+            "россия",
+            "rossiya",
+            "rambler",
+            "yandex"
+          ],
+          "type": "Strong",
+          "risk_value": 1.0
+        },
+        {
+          "triggers": [
+            "rus",
+            "ros",
+            "ru",
+            "rf",
+            "ру",
+            "рф"
+          ],
+          "type": "Weak",
+          "risk_value": 1.0
+        }
+      ]
+    },
+    {
+      "name": "company",
+      "type": [],
+      "rules": [
+        {
+          "triggers": [
+            "russia",
+            "россия",
+            "rossiya",
+            "rambler",
+            "yandex"
+          ],
+          "type": "Strong",
+          "risk_value": 1.0
+        },
+        {
+          "triggers": [
+            "rus",
+            "ros",
+            "ru",
+            "rf",
+            "ру",
+            "рф"
+          ],
+          "type": "Weak",
+          "risk_value": 1.0
+        }
+      ]
+    },
+    {
+      "name": "bio",
+      "type": [],
+      "rules": [
+        {
+          "triggers": [
+            "russia",
+            "россия",
+            "rossiya",
+            "rambler",
+            "yandex"
+          ],
+          "type": "Strong",
+          "risk_value": 1.0
+        },
+        {
+          "triggers": [
+            "rus",
+            "ros",
+            "ru",
+            "rf",
+            "ру",
+            "рф"
+          ],
+          "type": "Weak",
+          "risk_value": 1.0
+        }
+      ]
+    }
+  ]
+}

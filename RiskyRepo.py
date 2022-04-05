@@ -37,8 +37,8 @@ class RiskyRepo:
             return
         self.repo_author = repo_author
         self.repo_name = repo_name
-        self.riskRatingBorder = config.get('riskRatingBorder', 1.0)
-        self.riskyContributorsList = list()
+        self.riskRatingBorder = config.get('risk_border_value', 0.9)
+        self.riskyContributorsList = []
         return
 
     # Will Only Add Risky Ones
@@ -71,7 +71,8 @@ class RiskyRepo:
                 continue
             print("That contributor triggered rules:")
             print("\n".join(contributor.triggeredRulesDesc))
-            riskyDict = contributor.__dict__
+            riskyDict = contributor.__dict__.copy()
+            riskyDict.pop('triggeredRules', None)
             riskyDict.pop('triggeredRulesDesc', None)
             print(json.dumps(riskyDict, indent=4))
             print("=" * 40)
@@ -94,7 +95,8 @@ class RiskyRepo:
             print("Warning author of repo suspicious!")
             print("That contributor triggered rules:")
             print("\n".join(self.riskyAuthor.triggeredRulesDesc))
-            riskyDict = self.riskyAuthor.__dict__
+            riskyDict = self.riskyAuthor.__dict__.copy()
+            riskyDict.pop('triggeredRules', None)
             riskyDict.pop('triggeredRulesDesc', None)
             print(json.dumps(riskyDict, indent=4))
         return

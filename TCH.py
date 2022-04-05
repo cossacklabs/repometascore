@@ -2,13 +2,15 @@ import json
 import random
 
 import requests
-from typing import List
+from typing import List, Dict
 
 from RiskyRepo import RiskyRepo
 from Contributor import Contributor
 
 import aiohttp
 import asyncio
+
+from TriggeredRule import TriggeredRule
 
 russian_mail_domains = [
     "rambler.ru"
@@ -55,13 +57,16 @@ class TCH:
     repo_name: str = str()
     auth_token: str = str()
     auth_token_check: bool = False
+    config: Dict
 
     event = None
 
-    def __init__(self, repo_url, gth_token):
+    def __init__(self, repo_url, config):
         self.repo_author = get_repo_author(repo_url)
         self.repo_name = get_repo_name(repo_url)
-        self.auth_token = f"token {gth_token}"
+        with open(config) as conf_file:
+            self.config = json.load(conf_file)
+        self.auth_token = f"token {self.config['git_token']}"
 
     def checkAuthToken(self):
         print("Checking Auth Token")
@@ -86,14 +91,39 @@ class TCH:
         self.auth_token_check = False
         return False
 
-    def scanRepo(self):
+    def checkAuthTokenRetries(self, retries_count):
         retries_count = 0
         while not self.auth_token_check and retries_count < 5:
             self.checkAuthToken()
             retries_count += 1
             if not self.auth_token_check:
                 print(f"Retry one more time! Try count: {retries_count}")
-        retries_count = 0
+        return self.auth_token_check
+
+    def scanRepo(self):
+        if not self.checkAuthTokenRetries(5) and not self.auth_token_check:
+            return False, None
+
+        repo_result = RiskyRepo(
+            self.repo_author,
+            self.repo_name,
+            self.config
+        )
+
+        contributors: List[Contributor] = []
+        contributors = self.getContributorsList()
+        for contributor in contributors:
+            if not isinstance(contributor.url, str) or not contributor.url:
+                continue
+            contributor = self.getContributorInfo(contributor)
+            contributor = self.checkContributor(contributor)
+            repo_result.addContributor(contributor)
+
+        return True, repo_result
+
+    async def scanRepoAsync(self):
+        if not self.checkAuthTokenRetries(5) and not self.auth_token_check:
+            return False, None
 
         if not self.auth_token_check:
             return False, None
@@ -101,15 +131,15 @@ class TCH:
         repo_result = RiskyRepo(
             self.repo_author,
             self.repo_name,
-            {'riskRatingBorder': 1}
+            self.config
         )
 
-        contributors: List[Contributor] = list()
+        contributors: List[Contributor] = []
         contributors = self.getContributorsList()
-        contributors = asyncio.run(self.getContributorsInfoAsync(contributors))
+        contributors = await self.getContributorsInfoAsync(contributors)
 
         for contributor in contributors:
-            if contributor.url is str():
+            if not isinstance(contributor.url, str) or not contributor.url:
                 continue
             contributor = self.checkContributor(contributor)
             repo_result.addContributor(contributor)
@@ -117,8 +147,8 @@ class TCH:
         return True, repo_result
 
     def getContributorsList(self):
-        contributors_info = list()
-        login_contributor = dict()
+        contributors_info = []
+        login_contributor = {}
 
         # get all list of contributors:
         per_page = 100
@@ -126,7 +156,7 @@ class TCH:
         while True:
             response = requests.get(
                 url=f"https://api.github.com/repos/{self.repo_author}/{self.repo_name}/contributors"
-                    f"?anon=1&per_page={per_page}&page={page_num}",
+                    f"?anon=0&per_page={per_page}&page={page_num}",
                 headers={
                     'Authorization': self.auth_token,
                     'Accept': 'application/vnd.github.v3+json'
@@ -138,7 +168,6 @@ class TCH:
 
             for contributor in contributors_json:
                 contributor_obj = Contributor(contributor)
-                contributor_obj.commits = contributor['contributions']
                 contributors_info.append(contributor_obj)
                 if contributor['type'] != "Anonymous":
                     login_contributor[contributor_obj.login] = contributor_obj
@@ -176,42 +205,35 @@ class TCH:
         return contributors_info
 
     def getContributorInfo(self, contributor: Contributor):
-        if contributor.url is str():
+        if not isinstance(contributor.url, str) or not contributor.url:
             return contributor
 
-        '''
         response = requests.get(
             url=f"https://api.github.com/repos/{self.repo_author}/{self.repo_name}/commits"
-                f"?author={contributor.login}&per_page=1&page={0}",
+                f"?author={contributor.login}&per_page=1&page=1",
             headers={
                 'Authorization': self.auth_token,
                 'Accept': 'application/vnd.github.v3+json'
             }
         )
-        contributor.addValue(json.loads(response.text)[0]['commit']['author'])
-        '''
+        some_commit = json.loads(response.text)
 
-        response = requests.get(
-            url=f"https://api.github.com/repos/{self.repo_author}/{self.repo_name}/commits"
-                f"?author={contributor.login}&per_page=1&page={contributor.commits}",
-            headers={
-                'Authorization': self.auth_token,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        )
-        if len(json.loads(response.text)) == 0:
+        if len(some_commit) > 0:
+            contributor.addValue(some_commit[0]['commit']['author'])
+
+        if contributor.commits > 1:
             response = requests.get(
                 url=f"https://api.github.com/repos/{self.repo_author}/{self.repo_name}/commits"
-                    f"?author={contributor.login}&per_page=1&page=1",
+                    f"?author={contributor.login}&per_page=1&page={contributor.commits}",
                 headers={
                     'Authorization': self.auth_token,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             )
-            if len(json.loads(response.text)) > 0:
-                contributor.addValue(json.loads(response.text)[0]['commit']['author'])
-        else:
-            contributor.addValue(json.loads(response.text)[0]['commit']['author'])
+            some_commit = json.loads(response.text)
+
+            if len(some_commit) > 0:
+                contributor.addValue(some_commit[0]['commit']['author'])
 
         response = requests.get(
             url=contributor.url,
@@ -220,16 +242,17 @@ class TCH:
                 'Accept': 'application/vnd.github.v3+json'
             }
         )
-        contributor.addValue(json.loads(response.text))
+        contributor_info = json.loads(response.text)
+        contributor.addValue(contributor_info)
 
         return contributor
 
-    async def getContributorsInfoAsync(self, contributors: List[Contributor]):
+    async def getContributorsInfoAsync(self, contributors: List[Contributor]) -> List[Contributor]:
         tasks = []
 
-        user_contributors = list()
+        user_contributors = []
         for contributor in contributors:
-            if contributor.url is not str():
+            if contributor.url and isinstance(contributor.url, str):
                 user_contributors.append(contributor)
 
         async with aiohttp.ClientSession() as session:
@@ -240,7 +263,7 @@ class TCH:
         return contributors
 
     async def getContributorInfoAsync(self, session, contributor: Contributor):
-        if contributor.url is str():
+        if not isinstance(contributor.url, str) or not contributor.url:
             return contributor
 
         some_commit = await self.getAsyncRequest(
@@ -248,14 +271,15 @@ class TCH:
             url=f"https://api.github.com/repos/{self.repo_author}/{self.repo_name}/commits"
                 f"?author={contributor.login}&per_page=1&page=1",
         )
-        if len(some_commit) > 0 and contributor.commits > 1:
+        if len(some_commit) > 0:
             contributor.addValue(some_commit[0]['commit']['author'])
+        if contributor.commits > 1:
             some_commit = await self.getAsyncRequest(
                 session,
                 url=f"https://api.github.com/repos/{self.repo_author}/{self.repo_name}/commits"
                     f"?author={contributor.login}&per_page=1&page={contributor.commits}",
             )
-            if len(some_commit) > 0 and contributor.commits > 1:
+            if len(some_commit) > 0:
                 contributor.addValue(some_commit[0]['commit']['author'])
 
         contributor_info = await self.getAsyncRequest(
@@ -285,94 +309,39 @@ class TCH:
         return result
 
     def checkContributor(self, contributor):
-        location_lower = contributor.location.lower()
-        if "russia" in location_lower or "россия" in location_lower or "rossiya" in location_lower:
-            contributor.triggeredRulesDesc.append(f"Strong. Location: {contributor.location}")
-            contributor.riskRating += 1.0
-        elif "rus" in location_lower or "ros" in location_lower or "ru" in location_lower \
-                or "ру" in location_lower or 'rf' in location_lower or 'рф' in location_lower:
-            contributor.triggeredRulesDesc.append(f"Weak. Location. Rule (rus/ros/ru/rf/ру/рф): {contributor.location}")
-            contributor.riskRating += 1.0
-
-        for email in contributor.email:
-            email_lower = email.lower()
-            mail_domain = email_lower[email_lower.find('@') + 1:]
-            if 'mail.ru' in email_lower or 'yandex' in email_lower \
-                    or 'russia' in email_lower or 'rossiya' in email_lower \
-                    or 'rambler' in email_lower:
-                contributor.triggeredRulesDesc.append(f"Strong. Email: {email}")
-                contributor.riskRating += 1.0
-            elif mail_domain in russian_mail_domains:
-                contributor.triggeredRulesDesc.append(f"Strong. Email. Rule russian mail service: {email}")
-                contributor.riskRating += 1.0
-            elif mail_domain[:-3] == '.ru' or '.ru.' in mail_domain \
-                    or mail_domain[:-3] == '.rf' or '.rf.' in mail_domain \
-                    or mail_domain[:-3] == '.рф' or '.рф.' in mail_domain:
-                contributor.triggeredRulesDesc.append(f"Considerable. Email. Rule russian mail service: {email}")
-                contributor.riskRating += 1.0
-
-        login_lower = contributor.login.lower()
-        if 'russia' in login_lower or 'rossiya' in login_lower \
-                or 'rambler' in login_lower or 'yandex' in login_lower:
-            contributor.triggeredRulesDesc.append(f"Strong. Login: {contributor.login}")
-            contributor.riskRating += 1.0
-        elif 'rus' in login_lower or 'ros' in login_lower or 'ru' in login_lower or 'rf' in login_lower:
-            contributor.triggeredRulesDesc.append(f"Weak. Login. Rule (rus/ros/ru/rf): {contributor.login}")
-            contributor.riskRating += 1.0
-
-        twitter_username_lower = contributor.twitter_username.lower()
-        if 'russia' in twitter_username_lower or 'rossiya' in twitter_username_lower \
-                or 'rambler' in twitter_username_lower or 'yandex' in twitter_username_lower:
-            contributor.triggeredRulesDesc.append(f"Strong. Twitter username: {contributor.twitter_username}")
-            contributor.riskRating += 1.0
-        elif 'rus' in twitter_username_lower or 'ros' in twitter_username_lower or 'ru' in twitter_username_lower \
-                or 'rf' in twitter_username_lower:
-            contributor.triggeredRulesDesc.append(
-                f"Weak. Twitter username. Rule (rus/ros/ru/rf): {contributor.twitter_username}")
-            contributor.riskRating += 1.0
-
-        for name in contributor.name:
-            name_lower = name.lower()
-            if 'russia' in name_lower or 'rossiya' in name_lower \
-                    or 'rambler' in name_lower or 'yandex' in name_lower \
-                    or 'россия' in name_lower:
-                contributor.triggeredRulesDesc.append(f"Strong. Name: {name}")
-                contributor.riskRating += 1.0
-            elif "rus" in name_lower or "ros" in name_lower or "ru" in name_lower \
-                    or "ру" in name_lower or 'rf' in name_lower or 'рф' in name_lower:
-                contributor.triggeredRulesDesc.append(f"Weak. Name. Rule (rus/ros/ru/rf/ру/рф): {name}")
-                contributor.riskRating += 1.0
-
-        company_lower = contributor.company.lower()
-        if 'russia' in company_lower or 'rossiya' in company_lower \
-                or 'rambler' in company_lower or 'yandex' in company_lower \
-                or 'россия' in company_lower:
-            contributor.triggeredRulesDesc.append(f"Strong. Company: {contributor.company}")
-            contributor.riskRating += 1.0
-        elif "rus" in company_lower or "ros" in company_lower or "ru" in company_lower \
-                or "ру" in company_lower or 'rf' in company_lower or 'рф' in company_lower:
-            contributor.triggeredRulesDesc.append(f"Weak. Company. Rule (rus/ros/ru/rf/ру/рф): {contributor.company}")
-            contributor.riskRating += 1.0
-
-        blog_lower = contributor.blog.lower()
-        if 'russia' in blog_lower or 'rossiya' in blog_lower \
-                or 'rambler' in blog_lower or 'yandex' in blog_lower:
-            contributor.triggeredRulesDesc.append(f"Strong. Blog: {contributor.blog}")
-            contributor.riskRating += 1.0
-        elif "rus" in blog_lower or "ros" in blog_lower or "ru" in blog_lower \
-                or 'rf' in blog_lower:
-            contributor.triggeredRulesDesc.append(f"Weak. Blog. Rule (rus/ros/ru/rf): {contributor.blog}")
-            contributor.riskRating += 1.0
-
-        bio_lower = contributor.bio.lower()
-        if 'russia' in bio_lower or 'rossiya' in bio_lower \
-                or 'rambler' in bio_lower or 'yandex' in bio_lower \
-                or 'россия' in bio_lower:
-            contributor.triggeredRulesDesc.append(f"Strong. Bio: {contributor.bio}")
-            contributor.riskRating += 1.0
-        elif "rus" in bio_lower or "ros" in bio_lower or "ru" in bio_lower \
-                or "ру" in bio_lower or 'rf' in bio_lower or 'рф' in bio_lower:
-            contributor.triggeredRulesDesc.append(f"Weak. Bio. Rule (rus/ros/ru/rf/ру/рф): {contributor.bio}")
-            contributor.riskRating += 1.0
-
+        for field in self.config['fields']:
+            self.checkContributorField(contributor, field)
         return contributor
+
+    def checkContributorField(self, contributor, field):
+        contributor_field = contributor.__dict__.get(field['name'], field['type'])
+        trigRuleList = []
+
+        if isinstance(contributor_field, list):
+            for contributor_field_value in contributor_field:
+                trigRuleList += self.checkFieldRules(contributor_field_value.lower(), field)
+        else:
+            trigRuleList += self.checkFieldRules(contributor_field.lower(), field)
+        contributor.triggeredRules += trigRuleList
+        for trigRule in trigRuleList:
+            contributor.triggeredRulesDesc.append(trigRule.getPrint())
+            contributor.riskRating += trigRule.riskValue
+        return
+
+    def checkFieldRules(self, value, field) -> List[TriggeredRule]:
+        trigRuleList: List[TriggeredRule] = []
+        for rule in field['rules']:
+            for trigger in rule['triggers']:
+                if trigger in value:
+                    trigRule = TriggeredRule()
+                    trigRule.type = rule['type']
+                    trigRule.value = value
+                    trigRule.trigger = trigger
+                    trigRule.fieldName = field['name']
+                    trigRule.riskValue = rule['risk_value']
+                    trigRuleList.append(trigRule)
+        return trigRuleList
+
+
+
+

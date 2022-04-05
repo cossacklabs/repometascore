@@ -1,5 +1,7 @@
 from typing import List
 
+from TriggeredRule import TriggeredRule
+
 
 class Contributor:
     # main contributor arguments
@@ -14,9 +16,9 @@ class Contributor:
 
     # detailed info from profile
     location: str = str()
-    email: List[str]
+    emails: List[str]
     twitter_username: str = str()
-    name: List[str]
+    names: List[str]
     company: str = str()
     blog: str = str()
     bio: str = str()
@@ -29,15 +31,17 @@ class Contributor:
     # List of human-readable descriptions
     # Why rule was triggered
     triggeredRulesDesc: List[str]
+    triggeredRules: List[TriggeredRule]
 
     def __init__(self, input_dict=None):
         # Lol, need to explicitly create new list
         # otherwise it just copies pointers to list
         # and all objects of that class
         # would have accumulated triggeredRulesDesc list
-        self.triggeredRulesDesc = list()
-        self.email = list()
-        self.name = list()
+        self.triggeredRulesDesc = []
+        self.triggeredRules = []
+        self.emails = []
+        self.names = []
         if input_dict:
             self.addValue(input_dict)
         return
@@ -48,72 +52,72 @@ class Contributor:
     # Old object values
     def addValue(self, input_dict: dict):
         # Check whether we have dict as input
-        if type(input_dict) is not dict:
+        if not isinstance(input_dict, dict):
             return
 
-        self.login = input_dict['login'] \
-            if input_dict.get('login') and type(input_dict.get('login')) is str and \
-               input_dict.get('login') is not str() else self.login
+        login = input_dict.get('login', '')
+        if login and isinstance(login, str):
+            self.login = login
 
-        self.url = input_dict['url'] \
-            if input_dict.get('url') and type(input_dict.get('url')) is str and \
-               input_dict.get('url') is not str() else self.url
+        url = input_dict.get('url', '')
+        if url and isinstance(url, str):
+            self.url = url
 
-        self.commits = input_dict['commits'] \
-            if input_dict.get('commits') and type(input_dict.get('commits')) is int and \
-               input_dict.get('commits') is not int() else self.commits
+        commits = input_dict.get('commits', 0)
+        if commits and isinstance(commits, int):
+            self.commits = commits
 
-        self.additions = input_dict['additions'] \
-            if input_dict.get('additions') and type(input_dict.get('additions')) is int and \
-               input_dict.get('additions') is not int() else self.additions
+        commits = input_dict.get('contributions', 0)
+        if commits and isinstance(commits, int):
+            self.commits = commits
 
-        self.deletions = input_dict['deletions'] \
-            if input_dict.get('deletions') and type(input_dict.get('deletions')) is int and \
-               input_dict.get('deletions') is not int() else self.deletions
+        additions = input_dict.get('additions', 0)
+        if additions and isinstance(additions, int):
+            self.additions = additions
 
-        self.delta = input_dict['delta'] \
-            if input_dict.get('delta') and type(input_dict.get('delta')) is int and \
-               input_dict.get('delta') is not int() else self.delta
+        deletions = input_dict.get('deletions', 0)
+        if deletions and isinstance(deletions, int):
+            self.deletions = deletions
 
-        self.location = input_dict['location'] \
-            if input_dict.get('location') and type(input_dict.get('location')) is str and \
-               input_dict.get('location') is not str() else self.location
+        delta = input_dict.get('delta', 0)
+        if delta and isinstance(delta, int):
+            self.delta = delta
 
-        email = input_dict['email'] \
-            if input_dict.get('email') and type(input_dict.get('email')) is str and \
-               input_dict.get('email') is not str() else None
-        if email and email not in self.email:
-            self.email.append(email)
+        location = input_dict.get('location', '')
+        if location and isinstance(location, str):
+            self.location = location
 
-        self.twitter_username = input_dict['twitter'] \
-            if input_dict.get('twitter') and type(input_dict.get('twitter')) is str and \
-               input_dict.get('twitter') is not str() else self.twitter_username
+        email = input_dict.get('email', '')
+        if email and isinstance(email, str) and email not in self.emails:
+            self.emails.append(email)
 
-        self.twitter_username = input_dict['twitter_username'] \
-            if input_dict.get('twitter_username') and type(input_dict.get('twitter_username')) is str and \
-               input_dict.get('twitter_username') is not str() else self.twitter_username
+        twitter_username = input_dict.get('twitter', '')
+        if twitter_username and isinstance(twitter_username, str):
+            self.twitter_username = twitter_username
 
-        name = input_dict['name'] \
-            if input_dict.get('name') and type(input_dict.get('name')) is str and \
-               input_dict.get('name') is not str() else None
-        if name and name not in self.name:
-            self.name.append(name)
+        twitter_username = input_dict.get('twitter_username', '')
+        if twitter_username and isinstance(twitter_username, str):
+            self.twitter_username = twitter_username
 
-        self.company = input_dict['company'] \
-            if input_dict.get('company') and type(input_dict.get('company')) is str and \
-               input_dict.get('company') is not str() else self.company
+        name = input_dict.get('name', '')
+        if name and isinstance(name, str) and name not in self.names:
+            self.names.append(name)
 
-        self.blog = input_dict['blog'] \
-            if input_dict.get('blog') and type(input_dict.get('blog')) is str and \
-               input_dict.get('blog') is not str() else self.blog
+        company = input_dict.get('company', '')
+        if company and isinstance(company, str):
+            self.company = company
 
-        self.bio = input_dict['bio'] \
-            if input_dict.get('bio') and type(input_dict.get('bio')) is str and \
-               input_dict.get('bio') is not str() else self.bio
+        blog = input_dict.get('blog', '')
+        if blog and isinstance(blog, str):
+            self.blog = blog
 
-        self.riskRating = input_dict['riskRating'] \
-            if input_dict.get('riskRating') and type(input_dict.get('riskRating')) is float and \
-               input_dict.get('riskRating') is not float() else self.riskRating
+        bio = input_dict.get('bio', '')
+        if bio and isinstance(bio, str):
+            self.bio = bio
+
+        riskRating = input_dict.get('riskRating', 0.0)
+        if riskRating and isinstance(riskRating, float):
+            self.riskRating = riskRating
 
         # Maybe will insert these (triggered rules) values directly through object call
         '''
