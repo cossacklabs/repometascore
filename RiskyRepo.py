@@ -1,38 +1,41 @@
 import json
 from typing import List
+
 from Contributor import Contributor
 
 
 class RiskyRepo:
     # Repo main info
-    repo_author: str = str()
-    repo_name: str = str()
+    repo_author: str
+    repo_name: str
 
     # details about commits in repo
-    commits: int = int()
-    additions: int = int()
-    deletions: int = int()
-    delta: int = int()
-    contributors: int = int()
+    commits: int
+    additions: int
+    deletions: int
+    delta: int
+    contributors: int
 
     # risky ones
-    risky_commits: int = int()
-    risky_additions: int = int()
-    risky_deletions: int = int()
-    risky_delta: int = int()
-    risky_contributors: int = int()
+    risky_commits: int
+    risky_additions: int
+    risky_deletions: int
+    risky_delta: int
+    risky_contributors: int
 
     # Risky contributors list
+    contributorsList: List[Contributor]
     riskyContributorsList: List[Contributor]
-    riskyAuthor: Contributor = None
+    riskyAuthor: Contributor
 
     # Border of which
     # We will determine if contributor
     # Is risky or not
-    riskRatingBorder: float = float()
+    riskRatingBorder: float
 
     # Provide
     def __init__(self, repo_author, repo_name, config: dict = None):
+        self.initialiseVariables()
         if not config:
             return
         self.repo_author = repo_author
@@ -40,6 +43,24 @@ class RiskyRepo:
         self.riskRatingBorder = config.get('risk_border_value', 0.9)
         self.riskyContributorsList = []
         return
+
+    def initialiseVariables(self):
+        self.repo_author = str()
+        self.repo_name = str()
+        self.commits = int()
+        self.additions = int()
+        self.deletions = int()
+        self.delta = int()
+        self.contributors = int()
+        self.risky_commits = int()
+        self.risky_additions = int()
+        self.risky_deletions = int()
+        self.risky_delta = int()
+        self.risky_contributors = int()
+        self.contributorsList = []
+        self.riskyContributorsList = []
+        self.riskyAuthor = None
+        self.riskRatingBorder = float()
 
     # Will Only Add Risky Ones
     # Provide as input only after
@@ -70,10 +91,10 @@ class RiskyRepo:
             if self.repo_author is contributor.login:
                 continue
             print("That contributor triggered rules:")
-            print("\n".join(contributor.triggeredRulesDesc))
+            for triggeredRule in contributor.triggeredRules:
+                print(triggeredRule.description)
             riskyDict = contributor.__dict__.copy()
             riskyDict.pop('triggeredRules', None)
-            riskyDict.pop('triggeredRulesDesc', None)
             print(json.dumps(riskyDict, indent=4))
             print("=" * 40)
 
@@ -94,9 +115,9 @@ class RiskyRepo:
             print("=" * 40)
             print("Warning author of repo suspicious!")
             print("That contributor triggered rules:")
-            print("\n".join(self.riskyAuthor.triggeredRulesDesc))
+            for triggeredRule in self.riskyAuthor.triggeredRules:
+                print(triggeredRule.description)
             riskyDict = self.riskyAuthor.__dict__.copy()
             riskyDict.pop('triggeredRules', None)
-            riskyDict.pop('triggeredRulesDesc', None)
             print(json.dumps(riskyDict, indent=4))
         return

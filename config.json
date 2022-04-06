@@ -1,10 +1,10 @@
 {
   "risk_border_value": 0.5,
   "git_token": "github_token",
+  "auth_token_max_retries": 5,
   "fields": [
     {
       "name": "location",
-      "type": "",
       "rules": [
         {
           "triggers": [
@@ -31,7 +31,6 @@
     },
     {
       "name": "emails",
-      "type": [],
       "rules": [
         {
           "triggers": [
@@ -75,7 +74,6 @@
     },
     {
       "name": "login",
-      "type": "",
       "rules": [
         {
           "triggers": [
@@ -101,7 +99,6 @@
     },
     {
       "name": "twitter_username",
-      "type": "",
       "rules": [
         {
           "triggers": [
@@ -127,7 +124,6 @@
     },
     {
       "name": "blog",
-      "type": "",
       "rules": [
         {
           "triggers": [
@@ -153,7 +149,6 @@
     },
     {
       "name": "names",
-      "type": [],
       "rules": [
         {
           "triggers": [
@@ -182,7 +177,6 @@
     },
     {
       "name": "company",
-      "type": [],
       "rules": [
         {
           "triggers": [
@@ -211,7 +205,6 @@
     },
     {
       "name": "bio",
-      "type": [],
       "rules": [
         {
           "triggers": [

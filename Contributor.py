@@ -1,50 +1,61 @@
 from typing import List
 
+from MyGithubApi import MyGithubApi
 from TriggeredRule import TriggeredRule
 
 
 class Contributor:
     # main contributor arguments
-    login: str = str()
-    url: str = str()
+    login: str
+    url: str
 
     # details about commits in repo
-    commits: int = int()
-    additions: int = int()
-    deletions: int = int()
-    delta: int = int()
+    commits: int
+    additions: int
+    deletions: int
+    delta: int
 
     # detailed info from profile
-    location: str = str()
+    location: str
     emails: List[str]
-    twitter_username: str = str()
+    twitter_username: str
     names: List[str]
-    company: str = str()
-    blog: str = str()
-    bio: str = str()
+    company: str
+    blog: str
+    bio: str
 
     # risk rating
     # 0 - clear
     # n - risky
-    riskRating: float = float()
+    riskRating: float
 
-    # List of human-readable descriptions
-    # Why rule was triggered
-    triggeredRulesDesc: List[str]
+    # List of instances TriggeredRule
+    # Why rule has been triggered
     triggeredRules: List[TriggeredRule]
 
     def __init__(self, input_dict=None):
-        # Lol, need to explicitly create new list
-        # otherwise it just copies pointers to list
-        # and all objects of that class
-        # would have accumulated triggeredRulesDesc list
-        self.triggeredRulesDesc = []
-        self.triggeredRules = []
-        self.emails = []
-        self.names = []
+        self.initialiseVariables()
         if input_dict:
             self.addValue(input_dict)
         return
+
+    def initialiseVariables(self):
+        self.login = str()
+        self.url = str()
+        self.commits = int()
+        self.additions = int()
+        self.deletions = int()
+        self.delta = int()
+        self.location = str()
+        self.emails = []
+        self.twitter_username = str()
+        self.names = []
+        self.company = str()
+        self.blog = str()
+        self.bio = str()
+        self.riskRating = float()
+        self.triggeredRules = []
+
 
     # Get some dict with values
     # If found interesting values
@@ -119,11 +130,44 @@ class Contributor:
         if riskRating and isinstance(riskRating, float):
             self.riskRating = riskRating
 
-        # Maybe will insert these (triggered rules) values directly through object call
-        '''
-        self.triggeredRulesDesc = input_dict['triggeredRulesDesc'] \
-            if input_dict.get('triggeredRulesDesc') and type(input_dict.get('triggeredRulesDesc')) is str and \
-               input_dict.get('triggeredRulesDesc') is not str() else self.triggeredRulesDesc
-        '''
+        return
 
+    async def fillWithInfo(self, session, repo_author, repo_name, myGithubApi: MyGithubApi):
+        if not isinstance(self.url, str) or not self.url:
+            return self
+        await self.fillWithCommitsInfo(session, repo_author, repo_name, myGithubApi)
+        await self.fillWithProfileInfo(session, myGithubApi)
+        return self
+
+    async def fillWithCommitsInfo(self, session, repo_author, repo_name, myGithubApi: MyGithubApi):
+        if not isinstance(self.url, str) or not self.url:
+            return
+
+        commit_info = await myGithubApi.getRepoCommitByAuthor(
+            session,
+            repo_author,
+            repo_name,
+            self.login,
+            1
+        )
+        if len(commit_info) > 0:
+            self.addValue(commit_info[0]['commit']['author'])
+
+        if self.commits > 1:
+            commit_info = await myGithubApi.getRepoCommitByAuthor(
+                session,
+                repo_author,
+                repo_name,
+                self.login,
+                self.commits
+            )
+            if len(commit_info) > 0:
+                self.addValue(commit_info[0]['commit']['author'])
+        return
+
+    async def fillWithProfileInfo(self, session, myGithubApi):
+        if not isinstance(self.url, str) or not self.url:
+            return
+        contributor_info = await myGithubApi.getUserProfileInfo(session, self.url)
+        self.addValue(contributor_info)
         return
