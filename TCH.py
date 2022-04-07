@@ -8,26 +8,39 @@ from RiskyRepo import RiskyRepo
 from Contributor import Contributor
 from TriggeredRule import TriggeredRule
 
-
+# This function returns repository name from
+# GitHub url of repository. It can be whether
+# https or http url. And it must follow next rules:
+# aaa/xxx/repo_name or aaa/xxx/repo_name/other_info/.../etc
+# example:
+# input: 'https://github.com/yandex/yandex-tank'
+# output: 'yandex-tank'
 def get_repo_name(repo_url):
     repo_name = repo_url.lstrip("https://")
     repo_name = repo_name.lstrip("http://")
 
     repo_name = repo_name[repo_name.find('/') + 1:]
-    repo_author = repo_name[:repo_name.find('/')]
     repo_name = repo_name[repo_name.find('/') + 1:]
     if repo_name.find('/') > 0:
         repo_name = repo_name[:repo_name.find('/')]
 
     return repo_name
 
-
+# This function returns repository name from
+# GitHub url of repository. It can be whether
+# https or http url. And it must follow next rules:
+# aaa/repo_author/xxx or aaa/repo_author/other_info/.../etc
+# or aaa/repo_author
+# example:
+# input: 'https://github.com/yandex/yandex-tank'
+# output: 'yandex'
 def get_repo_author(repo_url):
     repo_name = repo_url.lstrip("https://")
     repo_name = repo_name.lstrip("http://")
 
-    repo_name = repo_name[repo_name.find('/') + 1:]
-    repo_author = repo_name[:repo_name.find('/')]
+    repo_author = repo_name[repo_name.find('/') + 1:]
+    if repo_author.find('/') > 0:
+        repo_author = repo_author[:repo_author.find('/')]
     return repo_author
 
 
