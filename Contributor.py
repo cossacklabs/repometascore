@@ -1,119 +1,173 @@
 from typing import List
 
+from MyGithubApi import MyGithubApi
+from TriggeredRule import TriggeredRule
+
 
 class Contributor:
     # main contributor arguments
-    login: str = str()
-    url: str = str()
+    login: str
+    url: str
 
     # details about commits in repo
-    commits: int = int()
-    additions: int = int()
-    deletions: int = int()
-    delta: int = int()
+    commits: int
+    additions: int
+    deletions: int
+    delta: int
 
     # detailed info from profile
-    location: str = str()
-    email: str = str()
-    twitter_username: str = str()
-    name: str = str()
-    company: str = str()
-    blog: str = str()
-    bio: str = str()
+    location: str
+    emails: List[str]
+    twitter_username: str
+    names: List[str]
+    company: str
+    blog: str
+    bio: str
 
     # risk rating
     # 0 - clear
     # n - risky
-    riskRating: float = float()
+    riskRating: float
 
-    # List of human-readable descriptions
-    # Why rule was triggered
-    triggeredRulesDesc: List[str]
+    # List of instances TriggeredRule
+    # Why rule has been triggered
+    triggeredRules: List[TriggeredRule]
 
     def __init__(self, input_dict=None):
+        self.initialiseVariables()
         if input_dict:
             self.addValue(input_dict)
         return
+
+    def initialiseVariables(self):
+        self.login = str()
+        self.url = str()
+        self.commits = int()
+        self.additions = int()
+        self.deletions = int()
+        self.delta = int()
+        self.location = str()
+        self.emails = []
+        self.twitter_username = str()
+        self.names = []
+        self.company = str()
+        self.blog = str()
+        self.bio = str()
+        self.riskRating = float()
+        self.triggeredRules = []
+
 
     # Get some dict with values
     # If found interesting values
     # We would add them and rewrite
     # Old object values
     def addValue(self, input_dict: dict):
-        # Lol, need to explicitly create new list
-        # otherwise it just copies pointers to list
-        # and all objects of that class
-        # would have accumulated triggeredRulesDesc list
-        self.triggeredRulesDesc = list()
         # Check whether we have dict as input
-        if type(input_dict) is not dict:
+        if not isinstance(input_dict, dict):
             return
 
-        self.login = input_dict['login'] \
-            if input_dict.get('login') and type(input_dict.get('login')) is str and \
-               input_dict.get('login') is not str() else self.login
+        login = input_dict.get('login', '')
+        if login and isinstance(login, str):
+            self.login = login
 
-        self.url = input_dict['url'] \
-            if input_dict.get('url') and type(input_dict.get('url')) is str and \
-               input_dict.get('url') is not str() else self.url
+        url = input_dict.get('url', '')
+        if url and isinstance(url, str):
+            self.url = url
 
-        self.commits = input_dict['commits'] \
-            if input_dict.get('commits') and type(input_dict.get('commits')) is int and \
-               input_dict.get('commits') is not int() else self.commits
+        commits = input_dict.get('commits', 0)
+        if commits and isinstance(commits, int):
+            self.commits = commits
 
-        self.additions = input_dict['additions'] \
-            if input_dict.get('additions') and type(input_dict.get('additions')) is int and \
-               input_dict.get('additions') is not int() else self.additions
+        commits = input_dict.get('contributions', 0)
+        if commits and isinstance(commits, int):
+            self.commits = commits
 
-        self.deletions = input_dict['deletions'] \
-            if input_dict.get('deletions') and type(input_dict.get('deletions')) is int and \
-               input_dict.get('deletions') is not int() else self.deletions
+        additions = input_dict.get('additions', 0)
+        if additions and isinstance(additions, int):
+            self.additions = additions
 
-        self.delta = input_dict['delta'] \
-            if input_dict.get('delta') and type(input_dict.get('delta')) is int and \
-               input_dict.get('delta') is not int() else self.delta
+        deletions = input_dict.get('deletions', 0)
+        if deletions and isinstance(deletions, int):
+            self.deletions = deletions
 
-        self.location = input_dict['location'] \
-            if input_dict.get('location') and type(input_dict.get('location')) is str and \
-               input_dict.get('location') is not str() else self.location
+        delta = input_dict.get('delta', 0)
+        if delta and isinstance(delta, int):
+            self.delta = delta
 
-        self.email = input_dict['email'] \
-            if input_dict.get('email') and type(input_dict.get('email')) is str and \
-               input_dict.get('email') is not str() else self.email
+        location = input_dict.get('location', '')
+        if location and isinstance(location, str):
+            self.location = location
 
-        self.twitter_username = input_dict['twitter'] \
-            if input_dict.get('twitter') and type(input_dict.get('twitter')) is str and \
-               input_dict.get('twitter') is not str() else self.twitter_username
+        email = input_dict.get('email', '')
+        if email and isinstance(email, str) and email not in self.emails:
+            self.emails.append(email)
 
-        self.twitter_username = input_dict['twitter_username'] \
-            if input_dict.get('twitter_username') and type(input_dict.get('twitter_username')) is str and \
-               input_dict.get('twitter_username') is not str() else self.twitter_username
+        twitter_username = input_dict.get('twitter', '')
+        if twitter_username and isinstance(twitter_username, str):
+            self.twitter_username = twitter_username
 
-        self.name = input_dict['name'] \
-            if input_dict.get('name') and type(input_dict.get('name')) is str and \
-               input_dict.get('name') is not str() else self.name
+        twitter_username = input_dict.get('twitter_username', '')
+        if twitter_username and isinstance(twitter_username, str):
+            self.twitter_username = twitter_username
 
-        self.company = input_dict['company'] \
-            if input_dict.get('company') and type(input_dict.get('company')) is str and \
-               input_dict.get('company') is not str() else self.company
+        name = input_dict.get('name', '')
+        if name and isinstance(name, str) and name not in self.names:
+            self.names.append(name)
 
-        self.blog = input_dict['blog'] \
-            if input_dict.get('blog') and type(input_dict.get('blog')) is str and \
-               input_dict.get('blog') is not str() else self.blog
+        company = input_dict.get('company', '')
+        if company and isinstance(company, str):
+            self.company = company
 
-        self.bio = input_dict['bio'] \
-            if input_dict.get('bio') and type(input_dict.get('bio')) is str and \
-               input_dict.get('bio') is not str() else self.bio
+        blog = input_dict.get('blog', '')
+        if blog and isinstance(blog, str):
+            self.blog = blog
 
-        self.riskRating = input_dict['riskRating'] \
-            if input_dict.get('riskRating') and type(input_dict.get('riskRating')) is float and \
-               input_dict.get('riskRating') is not float() else self.riskRating
+        bio = input_dict.get('bio', '')
+        if bio and isinstance(bio, str):
+            self.bio = bio
 
-        # Maybe will insert these (triggered rules) values directly through object call
-        '''
-        self.triggeredRulesDesc = input_dict['triggeredRulesDesc'] \
-            if input_dict.get('triggeredRulesDesc') and type(input_dict.get('triggeredRulesDesc')) is str and \
-               input_dict.get('triggeredRulesDesc') is not str() else self.triggeredRulesDesc
-        '''
+        riskRating = input_dict.get('riskRating', 0.0)
+        if riskRating and isinstance(riskRating, float):
+            self.riskRating = riskRating
 
+        return
+
+    async def fillWithInfo(self, session, repo_author, repo_name, myGithubApi: MyGithubApi):
+        if not isinstance(self.url, str) or not self.url:
+            return self
+        await self.fillWithCommitsInfo(session, repo_author, repo_name, myGithubApi)
+        await self.fillWithProfileInfo(session, myGithubApi)
+        return self
+
+    async def fillWithCommitsInfo(self, session, repo_author, repo_name, myGithubApi: MyGithubApi):
+        if not isinstance(self.url, str) or not self.url:
+            return
+
+        commit_info = await myGithubApi.getRepoCommitByAuthor(
+            session,
+            repo_author,
+            repo_name,
+            self.login,
+            1
+        )
+        if len(commit_info) > 0:
+            self.addValue(commit_info[0]['commit']['author'])
+
+        if self.commits > 1:
+            commit_info = await myGithubApi.getRepoCommitByAuthor(
+                session,
+                repo_author,
+                repo_name,
+                self.login,
+                self.commits
+            )
+            if len(commit_info) > 0:
+                self.addValue(commit_info[0]['commit']['author'])
+        return
+
+    async def fillWithProfileInfo(self, session, myGithubApi):
+        if not isinstance(self.url, str) or not self.url:
+            return
+        contributor_info = await myGithubApi.getUserProfileInfo(session, self.url)
+        self.addValue(contributor_info)
         return
