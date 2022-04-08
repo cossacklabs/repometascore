@@ -1,7 +1,7 @@
 import json
 from typing import List
 
-from Contributor import Contributor
+from .Contributor import Contributor
 
 
 class RiskyRepo:

@@ -2,8 +2,8 @@ import asyncio
 import argparse
 import time
 
-from riskyCodeHunter.RCH import RCH
-from riskyCodeHunter.RiskyRepo import RiskyRepo
+from .RCH import RCH
+from .RiskyRepo import RiskyRepo
 
 
 def main():

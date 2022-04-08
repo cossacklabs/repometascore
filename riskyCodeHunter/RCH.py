@@ -1,12 +1,13 @@
 import json
 import aiohttp
 import asyncio
+import os, sys
 from typing import List, Dict
 
-from MyGithubApi import MyGithubApi
-from RiskyRepo import RiskyRepo
-from Contributor import Contributor
-from TriggeredRule import TriggeredRule
+from .MyGithubApi import MyGithubApi
+from .RiskyRepo import RiskyRepo
+from .Contributor import Contributor
+from .TriggeredRule import TriggeredRule
 
 # This function returns repository name from
 # GitHub url of repository. It can be whether
@@ -44,19 +45,23 @@ def get_repo_author(repo_url):
     return repo_author
 
 
-class TCH:
+class RCH:
     repo_author: str
     repo_name: str
     auth_token_max_retries: int
     myGithubApi: MyGithubApi
     config: Dict
 
-    def __init__(self, repo_url, config):
+    def __init__(self, repo_url, config=None, git_token=None):
         self.initialiseVariables()
         self.repo_author = get_repo_author(repo_url)
         self.repo_name = get_repo_name(repo_url)
+        if not config:
+            config = os.path.join(os.path.dirname(__file__), 'data/config.json')
         with open(config) as conf_file:
             self.config = json.load(conf_file)
+        if git_token:
+            self.config['git_token'] = git_token
         auth_token = f"token {self.config['git_token']}"
         auth_token_max_retries = self.config['auth_token_max_retries']
         self.myGithubApi = MyGithubApi(auth_token, auth_token_max_retries)
