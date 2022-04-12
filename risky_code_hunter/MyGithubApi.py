@@ -1,6 +1,7 @@
 import asyncio
 import json
 import random
+
 import requests
 from typing import Dict, List
 
@@ -69,6 +70,11 @@ class MyGithubApi:
                 }
             )
             response_json = json.loads(response.text)
+            if response.status_code == 404:
+                raise Exception(
+                    "Could not found this repo: "
+                    f"https://github.com/{repo_author}/{repo_name} "
+                )
             if len(response_json) == 0:
                 break
             contributors_json += response_json

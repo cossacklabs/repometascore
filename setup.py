@@ -8,10 +8,10 @@ with open("LICENSE", "r") as fh:
     license = fh.read()
 
 setuptools.setup(
-    name="riskyCodeHunter", # Replace with your own username
+    name="risky_code_hunter",
     version="0.9.0",
-    author="CossackLabs",
-    author_email="cossacklabs.com",
+    author="Cossack Labs",
+    author_email="dev@cossacklabs.com",
     description="Package to detect risky contributors into repository",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -20,8 +20,8 @@ setuptools.setup(
         "Bug Tracker": "https://github.com/cossacklabs/risky-code-hunter/issues",
     },
     install_requires=[
-        "requests>=2.27.1",
-        "aiohttp>=3.8.1"
+        "requests~=2.27.1",
+        "aiohttp~=3.8.1"
     ],
     packages=setuptools.find_packages(),
     classifiers=[
@@ -31,5 +31,6 @@ setuptools.setup(
     ],
     python_requires='>=3.6',
     include_package_data=True,
-    license=license
+    license='Apache Software License',
+    platforms=['OS Independent']
 )
