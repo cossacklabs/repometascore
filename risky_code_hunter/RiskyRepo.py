@@ -14,14 +14,14 @@ class RiskyRepo:
     additions: int
     deletions: int
     delta: int
-    contributors: int
+    contributors_count: int
 
     # risky ones
     risky_commits: int
     risky_additions: int
     risky_deletions: int
     risky_delta: int
-    risky_contributors: int
+    risky_contributors_count: int
 
     # Risky contributors list
     contributorsList: List[Contributor]
@@ -51,12 +51,12 @@ class RiskyRepo:
         self.additions = int()
         self.deletions = int()
         self.delta = int()
-        self.contributors = int()
+        self.contributors_count = int()
         self.risky_commits = int()
         self.risky_additions = int()
         self.risky_deletions = int()
         self.risky_delta = int()
-        self.risky_contributors = int()
+        self.risky_contributors_count = int()
         self.contributorsList = []
         self.riskyContributorsList = []
         self.riskyAuthor = None
@@ -73,14 +73,15 @@ class RiskyRepo:
         self.additions += contributor.additions
         self.deletions += contributor.deletions
         self.delta += contributor.delta
-        self.contributors += 1
+        self.contributors_count += 1
+        self.contributorsList.append(contributor)
 
         if contributor.riskRating >= self.riskRatingBorder:
             self.risky_commits += contributor.commits
             self.risky_additions += contributor.additions
             self.risky_deletions += contributor.deletions
             self.risky_delta += contributor.delta
-            self.risky_contributors += 1
+            self.risky_contributors_count += 1
 
             self.riskyContributorsList.append(contributor)
         return
@@ -109,7 +110,7 @@ class RiskyRepo:
             f"Risky commits ratio: {self.risky_commits / self.commits} \t"
             f"Risky delta ratio: {self.risky_delta / self.delta}"
         )
-        print(f"{self.risky_contributors}/{self.contributors} contributors are risky")
+        print(f"{self.risky_contributors_count}/{self.contributors_count} contributors are risky")
 
         if self.riskyAuthor:
             print("=" * 40)
