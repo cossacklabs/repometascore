@@ -3,10 +3,11 @@ import aiohttp
 import asyncio
 from typing import List, Dict
 
-from MyGithubApi import MyGithubApi
-from RiskyRepo import RiskyRepo
-from Contributor import Contributor
-from TriggeredRule import TriggeredRule
+from .MyGithubApi import MyGithubApi
+from .RiskyRepo import RiskyRepo
+from .Contributor import Contributor
+from .TriggeredRule import TriggeredRule
+
 
 # This function returns repository name from
 # GitHub url of repository. It can be whether
@@ -26,6 +27,7 @@ def get_repo_name(repo_url):
 
     return repo_name
 
+
 # This function returns repository name from
 # GitHub url of repository. It can be whether
 # https or http url. And it must follow next rules:
@@ -44,19 +46,28 @@ def get_repo_author(repo_url):
     return repo_author
 
 
-class TCH:
+class RiskyCodeHunter:
     repo_author: str
     repo_name: str
     auth_token_max_retries: int
     myGithubApi: MyGithubApi
     config: Dict
 
-    def __init__(self, repo_url, config):
+    def __init__(self, repo_url, config=None, git_token=None):
         self.initialiseVariables()
+        if not repo_url:
+            raise Exception("No repository URL has been provided!")
+        if not config:
+            raise Exception("No config file has been provided!")
+        try:
+            with open(config) as conf_file:
+                self.config = json.load(conf_file)
+        except FileNotFoundError:
+            raise Exception("Wrong config file has been provided!")
+        if git_token:
+            self.config['git_token'] = git_token
         self.repo_author = get_repo_author(repo_url)
         self.repo_name = get_repo_name(repo_url)
-        with open(config) as conf_file:
-            self.config = json.load(conf_file)
         auth_token = f"token {self.config['git_token']}"
         auth_token_max_retries = self.config['auth_token_max_retries']
         self.myGithubApi = MyGithubApi(auth_token, auth_token_max_retries)

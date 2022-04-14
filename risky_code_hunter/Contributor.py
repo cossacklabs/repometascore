@@ -1,7 +1,7 @@
 from typing import List
 
-from MyGithubApi import MyGithubApi
-from TriggeredRule import TriggeredRule
+from .MyGithubApi import MyGithubApi
+from .TriggeredRule import TriggeredRule
 
 
 class Contributor:

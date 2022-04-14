@@ -1,7 +1,7 @@
 import json
 from typing import List
 
-from Contributor import Contributor
+from .Contributor import Contributor
 
 
 class RiskyRepo:
@@ -14,24 +14,25 @@ class RiskyRepo:
     additions: int
     deletions: int
     delta: int
-    contributors: int
+    contributors_count: int
 
     # risky ones
     risky_commits: int
     risky_additions: int
     risky_deletions: int
     risky_delta: int
-    risky_contributors: int
+    risky_contributors_count: int
 
-    # Risky contributors list
+    # contributors list
     contributorsList: List[Contributor]
+    # Risky contributors list
     riskyContributorsList: List[Contributor]
     riskyAuthor: Contributor
 
-    # Border of which
-    # We will determine if contributor
+    # Boundary value that helps us
+    # to determine if contributor
     # Is risky or not
-    riskRatingBorder: float
+    risk_boundary_value: float
 
     # Provide
     def __init__(self, repo_author, repo_name, config: dict = None):
@@ -40,7 +41,7 @@ class RiskyRepo:
             return
         self.repo_author = repo_author
         self.repo_name = repo_name
-        self.riskRatingBorder = config.get('risk_border_value', 0.9)
+        self.risk_boundary_value = config.get('risk_boundary_value', 0.9)
         self.riskyContributorsList = []
         return
 
@@ -51,16 +52,16 @@ class RiskyRepo:
         self.additions = int()
         self.deletions = int()
         self.delta = int()
-        self.contributors = int()
+        self.contributors_count = int()
         self.risky_commits = int()
         self.risky_additions = int()
         self.risky_deletions = int()
         self.risky_delta = int()
-        self.risky_contributors = int()
+        self.risky_contributors_count = int()
         self.contributorsList = []
         self.riskyContributorsList = []
         self.riskyAuthor = None
-        self.riskRatingBorder = float()
+        self.risk_boundary_value = float()
 
     # Will Only Add Risky Ones
     # Provide as input only after
@@ -73,14 +74,15 @@ class RiskyRepo:
         self.additions += contributor.additions
         self.deletions += contributor.deletions
         self.delta += contributor.delta
-        self.contributors += 1
+        self.contributors_count += 1
+        self.contributorsList.append(contributor)
 
-        if contributor.riskRating >= self.riskRatingBorder:
+        if contributor.riskRating >= self.risk_boundary_value:
             self.risky_commits += contributor.commits
             self.risky_additions += contributor.additions
             self.risky_deletions += contributor.deletions
             self.risky_delta += contributor.delta
-            self.risky_contributors += 1
+            self.risky_contributors_count += 1
 
             self.riskyContributorsList.append(contributor)
         return
@@ -109,7 +111,7 @@ class RiskyRepo:
             f"Risky commits ratio: {self.risky_commits / self.commits} \t"
             f"Risky delta ratio: {self.risky_delta / self.delta}"
         )
-        print(f"{self.risky_contributors}/{self.contributors} contributors are risky")
+        print(f"{self.risky_contributors_count}/{self.contributors_count} contributors are risky")
 
         if self.riskyAuthor:
             print("=" * 40)
