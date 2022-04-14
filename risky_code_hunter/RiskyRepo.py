@@ -29,10 +29,10 @@ class RiskyRepo:
     riskyContributorsList: List[Contributor]
     riskyAuthor: Contributor
 
-    # Border of which
-    # We will determine if contributor
+    # Boundary value that helps us
+    # to determine if contributor
     # Is risky or not
-    riskRatingBorder: float
+    risk_boundary_value: float
 
     # Provide
     def __init__(self, repo_author, repo_name, config: dict = None):
@@ -41,7 +41,7 @@ class RiskyRepo:
             return
         self.repo_author = repo_author
         self.repo_name = repo_name
-        self.riskRatingBorder = config.get('risk_border_value', 0.9)
+        self.risk_boundary_value = config.get('risk_boundary_value', 0.9)
         self.riskyContributorsList = []
         return
 
@@ -61,7 +61,7 @@ class RiskyRepo:
         self.contributorsList = []
         self.riskyContributorsList = []
         self.riskyAuthor = None
-        self.riskRatingBorder = float()
+        self.risk_boundary_value = float()
 
     # Will Only Add Risky Ones
     # Provide as input only after
@@ -77,7 +77,7 @@ class RiskyRepo:
         self.contributors_count += 1
         self.contributorsList.append(contributor)
 
-        if contributor.riskRating >= self.riskRatingBorder:
+        if contributor.riskRating >= self.risk_boundary_value:
             self.risky_commits += contributor.commits
             self.risky_additions += contributor.additions
             self.risky_deletions += contributor.deletions
