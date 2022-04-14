@@ -23,12 +23,12 @@ Configuration file must be with `*.json` extension. And contain
 only JSON dictionary.
 Variables, that are used in config file:
 ### Root
-| Variable                 | Type         | Description                                                                                                                                                        | 
-|--------------------------|--------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `risk_border_value`      | `float`      | Used in RiskyRepo. Sets border value, which define whether consider contributor as risky one or not. It compares `Contributor.riskRating` value with border value. |
-| `git_token`              | `str`        | Your GitHub token as string.                                                                                                                                       |
-| `auth_token_max_retries` | `int`        | Shows how many times we should try to reconnect to users GitHub token.                                                                                             |
-| `fields`                 | `List[Dict]` | List of fields with rules. More detailed about this variable in the next topic.                                                                                    |
+| Variable                 | Type         | Description                                                                                                                                                                                  | 
+|--------------------------|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `risk_boundary_value`    | `float`      | Used in RiskyRepo. Sets boundary value, which helps us to define whether should we consider contributor as risky one or not. It compares `Contributor.riskRating` value with boundary value. |
+| `git_token`              | `str`        | Your GitHub token as string.                                                                                                                                                                 |
+| `auth_token_max_retries` | `int`        | Shows how many times we should try to reconnect to users GitHub token.                                                                                                                       |
+| `fields`                 | `List[Dict]` | List of fields with rules. More detailed about this variable in the next topic.                                                                                                              |
 
 
 ### Fields

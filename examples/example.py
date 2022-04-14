@@ -8,7 +8,7 @@ from risky_code_hunter.TriggeredRule import TriggeredRule
 def main():
     repo_url = "https://github.com/yandex/yandex-tank"
     config_path = None
-    git_token = "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"
+    git_token = "ghp_token"
     riskyCodeHunter = RiskyCodeHunter(repo_url, config=config_path, git_token=git_token)
     riskyCodeHunter.checkAuthToken()
 
@@ -37,7 +37,7 @@ def main():
         f"Risky deleted lines from scanned repo: {repoResult.risky_deletions}",
         f"Risky accumulation of additions and deletions into scanned repo: {repoResult.risky_delta}",
         f"Risky contributors count: {repoResult.risky_contributors_count}",
-        f"Risk rating border: {repoResult.riskRatingBorder}"
+        f"Risk boundary value: {repoResult.risk_boundary_value}"
     )
 
     # Process through all contributors

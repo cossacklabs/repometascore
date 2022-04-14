@@ -1,5 +1,5 @@
 {
-  "risk_border_value": 0.5,
+  "risk_boundary_value": 0.5,
   "git_token": "github_token",
   "auth_token_max_retries": 5,
   "fields": [
