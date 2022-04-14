@@ -31,22 +31,6 @@ Variables, that are used in config file:
 | `fields`                 | `List[Dict]` | List of fields with rules. More detailed about this variable in the next topic.                                                                                    |
 
 
-- `risk_border_value`: 
-  - type: `float`
-  - desc: Used in RiskyRepo. And sets border value, which define
-whether consider contributor as risky one or not.
-- `git_token`:
-  - type: `str`
-  - desc: Your GitHub token as string.
-- `auth_token_max_retries`:
-  - type: `int`
-  - desc: Shows how many times we should try to reconnect to users 
-GitHub token. 
-- `fields`:
-  - type: `List[Dict]`
-  - desc: List of fields with rules. More detailed about this
-variable in the next topic.
-
 ### Fields
 | Variable | Type         | Description                                                                                                                                                                           | 
 |----------|--------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -87,7 +71,7 @@ or
 python -m risky_code_hunter --url https://github.com/yandex/yandex-tank --config config_file
 ```
 
-Also you can work with our program as package. [Example is here](https://github.com/cossacklabs/risky-code-hunter/examples/example.py).
+Also you can work with our program as package. [Example is here](https://github.com/cossacklabs/risky-code-hunter/blob/main/examples/example.py).
 
 # License
 "Risky Code Hunter" is distributed under the terms of the Apache License (Version 2.0). See license folder for details.

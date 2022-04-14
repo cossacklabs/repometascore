@@ -23,17 +23,7 @@ def main():
                        help='file with your github token in it')
     args = parser.parse_args()
 
-    repo_url = None
-    config_path = None
     git_token = None
-    if args.url:
-        repo_url = args.url
-    else:
-        raise Exception("No url has been provided!")
-    if args.config:
-        config_path = args.config
-    else:
-        raise Exception("No config file has been provided!")
     if args.tokenfile:
         try:
             with open(args.tokenfile) as token_file:
@@ -41,7 +31,7 @@ def main():
         except FileNotFoundError:
             raise Exception("Wrong token file has been provided!")
 
-    riskyCodeHunter = RiskyCodeHunter(repo_url, config=config_path, git_token=git_token)
+    riskyCodeHunter = RiskyCodeHunter(args.url, config=args.config, git_token=git_token)
     riskyCodeHunter.checkAuthToken()
 
     repoResult: RiskyRepo
@@ -50,7 +40,11 @@ def main():
     is_success, repoResult = asyncio.run(riskyCodeHunter.scanRepo())
     if is_success is True:
         repoResult.printFullReport()
-    print(f"--- { time.time() - start_time } seconds ---")
+        print(f"--- {time.time() - start_time} seconds ---")
+    else:
+        print(f"--- {time.time() - start_time} seconds ---")
+        raise Exception("Some error occured while scanning repo. Sorry.")
+
 
     return
 

@@ -23,8 +23,9 @@ class RiskyRepo:
     risky_delta: int
     risky_contributors_count: int
 
-    # Risky contributors list
+    # contributors list
     contributorsList: List[Contributor]
+    # Risky contributors list
     riskyContributorsList: List[Contributor]
     riskyAuthor: Contributor
 

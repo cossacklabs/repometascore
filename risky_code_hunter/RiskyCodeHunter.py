@@ -55,8 +55,8 @@ class RiskyCodeHunter:
 
     def __init__(self, repo_url, config=None, git_token=None):
         self.initialiseVariables()
-        self.repo_author = get_repo_author(repo_url)
-        self.repo_name = get_repo_name(repo_url)
+        if not repo_url:
+            raise Exception("No repository URL has been provided!")
         if not config:
             raise Exception("No config file has been provided!")
         try:
@@ -66,6 +66,8 @@ class RiskyCodeHunter:
             raise Exception("Wrong config file has been provided!")
         if git_token:
             self.config['git_token'] = git_token
+        self.repo_author = get_repo_author(repo_url)
+        self.repo_name = get_repo_name(repo_url)
         auth_token = f"token {self.config['git_token']}"
         auth_token_max_retries = self.config['auth_token_max_retries']
         self.myGithubApi = MyGithubApi(auth_token, auth_token_max_retries)
