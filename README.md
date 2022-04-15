@@ -11,7 +11,7 @@ in a repository, thus scoring it as risky. All information about contributors is
 
 In the future, we might add more external data sources. 
 
-Current RCH configuration is aimed at detecting reponsitories originating from Russia (or under significant control of Russian citizens) due to concerns obout Russian-originating open-source products. Without making any statement about potential Russian malicious activity in open-source, this is what we use it for. 
+Current RCH configuration is aimed at detecting reponsitories originating from Russia (or under significant control of Russian citizens) due to concerns about Russian-originating open-source products. Without making any statement about potential Russian malicious activity in open-source, this is what we use it for. 
 
 To begin working with this packages, firstly, you need to create
 and provide GitHub token. 
