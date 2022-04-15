@@ -1,17 +1,19 @@
 # Risky Code Hunter
-Get rid of toxic code!
+
+Detect risky code in your dependency chain.
 
 ---
 
 ## Description
-Current package can be used to identify risky contributors 
-into some repositories. All info about contributors are
-gathered through official GitHub API and solely based only
-on info that was leaved on GH by users. Currently you can 
-provide your very own config with own rulesets. Or use our
-config purely to see how our package performs.
+Current package can be used to identify certain contributors 
+in a repository, thus scoring it as risky. All information about contributors is collected 
+ through official GitHub API and solely based only on information that was provided by users to the platform. 
 
-To begin work with this packages, firstly, you need to create
+In the future, we might add more external data sources. 
+
+Current RCH configuration is aimed at detecting reponsitories originating from Russia (or under significant control of Russian citizens) due to concerns obout Russian-originating open-source products. Without making any statement about potential Russian malicious activity in open-source, this is what we use it for. 
+
+To begin working with this packages, firstly, you need to create
 and provide GitHub token. 
 [Here is description](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 on how to create it. For your security we recommend creating 
@@ -28,7 +30,7 @@ Variables, that are used in config file:
 | `risk_boundary_value`    | `float`      | Used in RiskyRepo. Sets boundary value, which helps us to define whether should we consider contributor as risky one or not. It compares `Contributor.riskRating` value with boundary value. |
 | `git_token`              | `str`        | Your GitHub token as string.                                                                                                                                                                 |
 | `auth_token_max_retries` | `int`        | Shows how many times we should try to reconnect to users GitHub token.                                                                                                                       |
-| `fields`                 | `List[Dict]` | List of fields with rules. More detailed about this variable in the next topic.                                                                                                              |
+| `fields`                 | `List[Dict]` | List of fields with rules. More detailed about this variable in the next section.                                                                                                              |
 
 
 ### Fields
