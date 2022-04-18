@@ -1,6 +1,8 @@
+import asyncio
 import json
 from typing import List
 
+from .MyGithubApi import MyGithubApi
 from .Contributor import Contributor
 
 
@@ -63,29 +65,20 @@ class RiskyRepo:
         self.riskyAuthor = None
         self.risk_boundary_value = float()
 
-    # Will Only Add Risky Ones
-    # Provide as input only after
-    # Rules based check was applied
     def addContributor(self, contributor: Contributor):
-        if type(contributor) is not Contributor:
+        if not isinstance(contributor, Contributor):
             return
-
         self.commits += contributor.commits
         self.additions += contributor.additions
         self.deletions += contributor.deletions
         self.delta += contributor.delta
         self.contributors_count += 1
         self.contributorsList.append(contributor)
-
-        if contributor.riskRating >= self.risk_boundary_value:
-            self.risky_commits += contributor.commits
-            self.risky_additions += contributor.additions
-            self.risky_deletions += contributor.deletions
-            self.risky_delta += contributor.delta
-            self.risky_contributors_count += 1
-
-            self.riskyContributorsList.append(contributor)
         return
+
+    def addContributors(self, contributors_list: List[Contributor]):
+        for contributor in contributors_list:
+            self.addContributor(contributor)
 
     # Print Full Human-Readable report
     def printFullReport(self):
@@ -122,4 +115,57 @@ class RiskyRepo:
             riskyDict = self.riskyAuthor.__dict__.copy()
             riskyDict.pop('triggeredRules', None)
             print(json.dumps(riskyDict, indent=4))
+        return
+
+    async def getContributorsList(self, myGithubApi: MyGithubApi) -> List[Contributor]:
+        contributors_info = []
+        login_contributor = {}
+
+        # get list of all contributors:
+        # anonymous contributors are currently turned off
+        contributors_json = await myGithubApi.getRepoContributors(self.repo_author, self.repo_name)
+        for contributor in contributors_json:
+            contributor_obj = Contributor(contributor)
+            contributors_info.append(contributor_obj)
+            if contributor['type'] != "Anonymous":
+                login_contributor[contributor_obj.login] = contributor_obj
+
+        # get contributors with stats (only top100)
+        contributors_json = await myGithubApi.getRepoContributorsStats(self.repo_author, self.repo_name)
+        for contributor in contributors_json:
+            if login_contributor.get(contributor['author']['login']):
+                contributor_obj = login_contributor.get(contributor['author']['login'])
+                contributor_obj.addValue(contributor['author'])
+                contributor_obj.commits = 0
+            else:
+                contributor_obj = Contributor(contributor['author'])
+                login_contributor[contributor_obj.login] = contributor_obj
+                contributors_info.append(contributor_obj)
+            for week in contributor['weeks']:
+                contributor_obj.commits += week['c']
+                contributor_obj.additions += week['a']
+                contributor_obj.deletions += week['d']
+            contributor_obj.delta = contributor_obj.additions + contributor_obj.deletions
+
+        self.addContributors(contributors_info)
+
+        return self.contributorsList
+
+    async def updateRiskyList(self):
+        self.risky_commits = 0
+        self.risky_additions = 0
+        self.risky_deletions = 0
+        self.risky_delta = 0
+        self.risky_contributors_count = 0
+        self.riskyContributorsList.clear()
+
+        for contributor in self.contributorsList:
+            if contributor.riskRating < self.risk_boundary_value:
+                continue
+            self.risky_commits += contributor.commits
+            self.risky_additions += contributor.additions
+            self.risky_deletions += contributor.deletions
+            self.risky_delta += contributor.delta
+            self.risky_contributors_count += 1
+            self.riskyContributorsList.append(contributor)
         return

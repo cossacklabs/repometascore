@@ -47,16 +47,13 @@ def get_repo_author(repo_url):
 
 
 class RiskyCodeHunter:
-    repo_author: str
-    repo_name: str
+    risky_repo_list: List[RiskyRepo]
     auth_token_max_retries: int
     myGithubApi: MyGithubApi
     config: Dict
 
-    def __init__(self, repo_url, config=None, git_token=None):
+    def __init__(self, config=None, git_token=None):
         self.initialiseVariables()
-        if not repo_url:
-            raise Exception("No repository URL has been provided!")
         if not config:
             raise Exception("No config file has been provided!")
         try:
@@ -66,115 +63,81 @@ class RiskyCodeHunter:
             raise Exception("Wrong config file has been provided!")
         if git_token:
             self.config['git_token'] = git_token
-        self.repo_author = get_repo_author(repo_url)
-        self.repo_name = get_repo_name(repo_url)
         auth_token = f"token {self.config['git_token']}"
         auth_token_max_retries = self.config['auth_token_max_retries']
         self.myGithubApi = MyGithubApi(auth_token, auth_token_max_retries)
 
     def initialiseVariables(self):
-        self.repo_author = str()
-        self.repo_name = str()
-        self.auth_token_max_retries = int()
         self.config = {}
+        self.risky_repo_list = []
+        self.auth_token_max_retries = int()
 
     def checkAuthToken(self):
         return self.myGithubApi.checkAuthTokenRetries(self.myGithubApi.auth_token_max_retries)
 
-    async def scanRepo(self):
+    async def scanRepo(self, repo_url):
         if not self.checkAuthToken():
             return False, None
-
-        repo_result = RiskyRepo(
-            self.repo_author,
-            self.repo_name,
+        if not repo_url:
+            raise Exception("No repository URL has been provided!")
+        risky_repo_scan = RiskyRepo(
+            get_repo_author(repo_url),
+            get_repo_name(repo_url),
             self.config
         )
+        self.risky_repo_list.append(risky_repo_scan)
 
-        contributors: List[Contributor] = []
-        contributors = self.getContributorsList()
-        contributors = await self.fillContributorsWithInfo(contributors)
+        contributors: List[Contributor]
+        contributors = await risky_repo_scan.getContributorsList(self.myGithubApi)
+        await self.checkAndFillRepoContributorWrap(risky_repo_scan)
+        await risky_repo_scan.updateRiskyList()
 
-        for contributor in contributors:
-            if not isinstance(contributor.url, str) or not contributor.url:
-                continue
-            contributor = self.checkAndFillContributor(contributor)
-            repo_result.addContributor(contributor)
+        return True, risky_repo_scan
 
-        return True, repo_result
-
-    def getContributorsList(self) -> List[Contributor]:
-        contributors_info = []
-        login_contributor = {}
-
-        # get list of all contributors:
-        # anonymous contributors are currently turned off
-        contributors_json = self.myGithubApi.getRepoContributors(self.repo_author, self.repo_name)
-        for contributor in contributors_json:
-            contributor_obj = Contributor(contributor)
-            contributors_info.append(contributor_obj)
-            if contributor['type'] != "Anonymous":
-                login_contributor[contributor_obj.login] = contributor_obj
-
-        # get contributors with stats (only top100)
-        contributors_json = self.myGithubApi.getRepoContributorsStats(self.repo_author, self.repo_name)
-        for contributor in contributors_json:
-            if login_contributor.get(contributor['author']['login']):
-                contributor_obj = login_contributor.get(contributor['author']['login'])
-                contributor_obj.addValue(contributor['author'])
-                contributor_obj.commits = 0
-            else:
-                contributor_obj = Contributor(contributor['author'])
-                login_contributor[contributor_obj.login] = contributor_obj
-                contributors_info.append(contributor_obj)
-            for week in contributor['weeks']:
-                contributor_obj.commits += week['c']
-                contributor_obj.additions += week['a']
-                contributor_obj.deletions += week['d']
-            contributor_obj.delta = contributor_obj.additions + contributor_obj.deletions
-
-        return contributors_info
-
-    async def fillContributorsWithInfo(self, contributors: List[Contributor]) -> List[Contributor]:
+    async def checkAndFillRepoContributorWrap(self, risky_repo_scan: RiskyRepo) -> List[Contributor]:
         tasks = []
 
         user_contributors = []
-        for contributor in contributors:
+        for contributor in risky_repo_scan.contributorsList:
             if contributor.url and isinstance(contributor.url, str):
                 user_contributors.append(contributor)
 
         async with aiohttp.ClientSession() as session:
             for contributor in user_contributors:
-                tasks.append(asyncio.ensure_future(contributor.fillWithInfo(
-                    session,
-                    self.repo_author,
-                    self.repo_name,
-                    self.myGithubApi
-                )))
+                tasks.append(asyncio.ensure_future(self.checkAndFillContributor(session, risky_repo_scan, contributor)))
             contributors = await asyncio.gather(*tasks)
-
         return contributors
 
-    def checkAndFillContributor(self, contributor):
-        for field in self.config['fields']:
-            self.checkAndFillContributorField(contributor, field)
+    async def checkAndFillContributor(self, session, risky_repo_scan: RiskyRepo, contributor: Contributor):
+        contributor = await contributor.fillWithInfo(session, risky_repo_scan.repo_author, risky_repo_scan.repo_name, self.myGithubApi)
+        contributor = await self.checkContributor(contributor)
+        if contributor.riskRating <= risky_repo_scan.risk_boundary_value + 3:
+            ## TODO additional info from github repo
+            ## clone githubrepo and check commit timezones
+            # self.checkTimezones(cloned_repo_path, contributor.emails)
+            pass
         return contributor
 
-    def checkAndFillContributorField(self, contributor, field):
+    async def checkContributor(self, contributor):
+        for field in self.config['fields']:
+            await self.checkContributorField(contributor, field)
+        return contributor
+
+    async def checkContributorField(self, contributor, field):
         contributor_field = contributor.__dict__.get(field['name'])
         trigRuleList = []
 
         if contributor_field and isinstance(contributor_field, list):
             for contributor_field_value in contributor_field:
-                trigRuleList += self.checkFieldRules(contributor_field_value.lower(), field)
+                trigRuleList += await self.checkFieldRules(contributor_field_value.lower(), field)
         elif contributor_field:
-            trigRuleList += self.checkFieldRules(contributor_field.lower(), field)
+            trigRuleList += await self.checkFieldRules(contributor_field.lower(), field)
         contributor.triggeredRules += trigRuleList
         for trigRule in trigRuleList:
             contributor.riskRating += trigRule.riskValue
         return
 
-    def checkFieldRules(self, value, field) -> List[TriggeredRule]:
+    async def checkFieldRules(self, value, field) -> List[TriggeredRule]:
         trigRuleList: List[TriggeredRule] = []
         for rule in field['rules']:
             for trigger in rule['triggers']:
