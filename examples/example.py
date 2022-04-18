@@ -9,11 +9,11 @@ def main():
     repo_url = "https://github.com/yandex/yandex-tank"
     config_path = None
     git_token = "ghp_token"
-    riskyCodeHunter = RiskyCodeHunter(repo_url, config=config_path, git_token=git_token)
+    riskyCodeHunter = RiskyCodeHunter(config=config_path, git_token=git_token)
     riskyCodeHunter.checkAuthToken()
 
     repoResult: RiskyRepo
-    is_success, repoResult = asyncio.run(riskyCodeHunter.scanRepo())
+    is_success, repoResult = asyncio.run(riskyCodeHunter.scanRepo(repo_url))
     if is_success is True:
         repoResult.printFullReport()
     else:
