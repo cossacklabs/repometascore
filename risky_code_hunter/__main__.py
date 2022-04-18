@@ -31,20 +31,19 @@ def main():
         except FileNotFoundError:
             raise Exception("Wrong token file has been provided!")
 
-    riskyCodeHunter = RiskyCodeHunter(args.url, config=args.config, git_token=git_token)
+    riskyCodeHunter = RiskyCodeHunter(config=args.config, git_token=git_token)
     riskyCodeHunter.checkAuthToken()
 
     repoResult: RiskyRepo
     is_success: bool
     start_time = time.time()
-    is_success, repoResult = asyncio.run(riskyCodeHunter.scanRepo())
+    is_success, repoResult = asyncio.run(riskyCodeHunter.scanRepo(args.url))
     if is_success is True:
         repoResult.printFullReport()
         print(f"--- {time.time() - start_time} seconds ---")
     else:
         print(f"--- {time.time() - start_time} seconds ---")
         raise Exception("Some error occured while scanning repo. Sorry.")
-
 
     return
 

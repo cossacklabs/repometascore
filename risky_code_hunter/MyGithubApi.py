@@ -56,7 +56,7 @@ class MyGithubApi:
     # get list of all contributors:
     # GitHub API expected data:
     # https://docs.github.com/en/rest/reference/repos#list-repository-contributors
-    def getRepoContributors(self, repo_author, repo_name, anon=0) -> List:
+    async def getRepoContributors(self, repo_author, repo_name, anon=0) -> List:
         per_page = 100
         page_num = 1
         contributors_json = []
@@ -69,12 +69,15 @@ class MyGithubApi:
                     'Accept': 'application/vnd.github.v3+json'
                 }
             )
-            response_json = json.loads(response.text)
             if response.status_code == 404:
                 raise Exception(
                     "Could not found this repo: "
                     f"https://github.com/{repo_author}/{repo_name} "
                 )
+            elif response.status_code != 200:
+                await asyncio.sleep(1)
+                continue
+            response_json = json.loads(response.text)
             if len(response_json) == 0:
                 break
             contributors_json += response_json
@@ -84,15 +87,26 @@ class MyGithubApi:
     # get contributors with stats (only top100)
     # expected data
     # https://docs.github.com/en/rest/reference/metrics#get-all-contributor-commit-activity
-    def getRepoContributorsStats(self, repo_author, repo_name) -> List:
-        response = requests.get(
-            url=f"https://api.github.com/repos/{repo_author}/{repo_name}/stats/contributors",
-            headers={
-                'Authorization': self.auth_token,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        )
-        contributors_json = json.loads(response.text)
+    async def getRepoContributorsStats(self, repo_author, repo_name) -> List:
+        contributors_json = {}
+        while True:
+            response = requests.get(
+                url=f"https://api.github.com/repos/{repo_author}/{repo_name}/stats/contributors",
+                headers={
+                    'Authorization': self.auth_token,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            )
+            if response.status_code == 404:
+                raise Exception(
+                    "Could not found this repo: "
+                    f"https://github.com/{repo_author}/{repo_name} "
+                )
+            elif response.status_code != 200:
+                await asyncio.sleep(1)
+                continue
+            contributors_json = json.loads(response.text)
+            break
         return contributors_json
 
     # get commit by author login
