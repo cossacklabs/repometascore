@@ -1,6 +1,8 @@
 import asyncio
 import json
-from typing import List
+from typing import List, Dict
+
+import aiohttp
 
 from .MyGithubApi import MyGithubApi
 from .Contributor import Contributor
@@ -88,7 +90,7 @@ class RiskyRepo:
             print("That contributor triggered rules:")
             for triggeredRule in contributor.triggeredRules:
                 print(triggeredRule.description)
-            riskyDict = contributor.__dict__.copy()
+            riskyDict = contributor.getJSON()
             riskyDict.pop('triggeredRules', None)
             print(json.dumps(riskyDict, indent=4))
             print("=" * 40)
@@ -112,18 +114,54 @@ class RiskyRepo:
             print("That contributor triggered rules:")
             for triggeredRule in self.riskyAuthor.triggeredRules:
                 print(triggeredRule.description)
-            riskyDict = self.riskyAuthor.__dict__.copy()
+            riskyDict = self.riskyAuthor.getJSON()
             riskyDict.pop('triggeredRules', None)
             print(json.dumps(riskyDict, indent=4))
         return
 
-    async def getContributorsList(self, myGithubApi: MyGithubApi) -> List[Contributor]:
+    # Print Full Human-Readable report
+    def getFullReport(self) -> str:
+        result = ""
+        for contributor in self.riskyContributorsList:
+            if self.repo_author is contributor.login:
+                continue
+            result += "That contributor triggered rules:\n"
+            for triggeredRule in contributor.triggeredRules:
+                result += triggeredRule.description + "\n"
+            riskyDict = contributor.getJSON()
+            riskyDict.pop('triggeredRules', None)
+            result += json.dumps(riskyDict, indent=4) + "\n"
+            result += "=" * 40 + "\n"
+        result += self.getShortReport() + "\n"
+        return result
+
+    # Print short human-readable report
+    def getShortReport(self) -> str:
+        result = ""
+        result += f"Risky commits count: {self.risky_commits} \t Risky delta count: {self.risky_delta}\n"
+        result += f"Total commits count: {self.commits} \t Total delta count: {self.delta}\n"
+        result += f"Risky commits ratio: {self.risky_commits / self.commits} \t" \
+                  f"Risky delta ratio: {self.risky_delta / self.delta}\n"
+        result += f"{self.risky_contributors_count}/{self.contributors_count} contributors are risky\n"
+
+        if self.riskyAuthor:
+            result += "=" * 40 + "\n"
+            result += "Warning author of repo suspicious!\n"
+            result += "That contributor triggered rules:\n"
+            for triggeredRule in self.riskyAuthor.triggeredRules:
+                result += triggeredRule.description + "\n"
+            riskyDict = self.riskyAuthor.getJSON()
+            riskyDict.pop('triggeredRules', None)
+            result += json.dumps(riskyDict, indent=4) + "\n"
+        return result
+
+    async def getContributorsList(self, session, myGithubApi: MyGithubApi) -> List[Contributor]:
         contributors_info = []
         login_contributor = {}
 
         # get list of all contributors:
         # anonymous contributors are currently turned off
-        contributors_json = await myGithubApi.getRepoContributors(self.repo_author, self.repo_name)
+        contributors_json = await myGithubApi.getRepoContributors(session, self.repo_author, self.repo_name)
         for contributor in contributors_json:
             contributor_obj = Contributor(contributor)
             contributors_info.append(contributor_obj)
@@ -131,7 +169,7 @@ class RiskyRepo:
                 login_contributor[contributor_obj.login] = contributor_obj
 
         # get contributors with stats (only top100)
-        contributors_json = await myGithubApi.getRepoContributorsStats(self.repo_author, self.repo_name)
+        contributors_json = await myGithubApi.getRepoContributorsStats(session, self.repo_author, self.repo_name)
         for contributor in contributors_json:
             if login_contributor.get(contributor['author']['login']):
                 contributor_obj = login_contributor.get(contributor['author']['login'])
@@ -169,3 +207,29 @@ class RiskyRepo:
             self.risky_contributors_count += 1
             self.riskyContributorsList.append(contributor)
         return
+
+    def getJSON(self) -> Dict:
+        result = self.__dict__.copy()
+
+        result.pop('riskyContributorsList')
+        result.pop('riskyAuthor')
+
+        contributorsList = []
+        for contributor in self.contributorsList:
+            contributorsList.append(contributor.getJSON())
+        result['contributorsList'] = contributorsList
+
+        return result
+
+    def getRiskyJSON(self) -> Dict:
+        result = self.__dict__.copy()
+
+        result.pop('contributorsList')
+        result.pop('riskyAuthor')
+
+        riskyContributorsList = []
+        for contributor in self.riskyContributorsList:
+            riskyContributorsList.append(contributor.getJSON())
+        result['riskyContributorsList'] = riskyContributorsList
+
+        return result

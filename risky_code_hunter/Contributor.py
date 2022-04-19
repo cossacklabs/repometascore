@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from .MyGithubApi import MyGithubApi
 from .TriggeredRule import TriggeredRule
@@ -171,3 +171,16 @@ class Contributor:
         contributor_info = await myGithubApi.getUserProfileInfo(session, self.url)
         self.addValue(contributor_info)
         return
+
+    def getJSON(self) -> Dict:
+        result = self.__dict__.copy()
+
+        result['names'] = self.names.copy()
+        result['emails'] = self.emails.copy()
+
+        triggeredRules = []
+        for triggeredRule in self.triggeredRules:
+            triggeredRules.append(triggeredRule.getJSON())
+        result['triggeredRules'] = triggeredRules
+
+        return result
