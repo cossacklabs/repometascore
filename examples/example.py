@@ -1,4 +1,6 @@
 import asyncio
+import json
+
 from risky_code_hunter.RiskyCodeHunter import RiskyCodeHunter
 from risky_code_hunter.RiskyRepo import RiskyRepo
 from risky_code_hunter.Contributor import Contributor
@@ -7,6 +9,10 @@ from risky_code_hunter.TriggeredRule import TriggeredRule
 
 def main():
     repo_url = "https://github.com/yandex/yandex-tank"
+    repo_url_list = [
+        "https://github.com/JetBrains/kotlin",
+        "https://github.com/yandex/yandex-tank"
+    ]
     config_path = None
     git_token = "ghp_token"
     riskyCodeHunter = RiskyCodeHunter(config=config_path, git_token=git_token)
@@ -18,6 +24,13 @@ def main():
         repoResult.printFullReport()
     else:
         raise Exception("Some error occured while scanning repo. Sorry.")
+
+    scanResults = asyncio.run(riskyCodeHunter.scanRepos(repo_url_list))
+    risky_json = []
+    for is_success, repoResult in scanResults:
+        if is_success is True:
+            risky_json.append(repoResult.getRiskyJSON())
+    print(json.dumps(risky_json, indent=4))
 
     # All values in repoResult can be read, but not be written!
     print("All values in classes RiskyRepo, Contributor and TriggeredRule can be read, but not be written!")

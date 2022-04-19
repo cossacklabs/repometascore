@@ -1,7 +1,7 @@
 import json
 import aiohttp
 import asyncio
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 from .MyGithubApi import MyGithubApi
 from .RiskyRepo import RiskyRepo
@@ -64,8 +64,12 @@ class RiskyCodeHunter:
         if git_token:
             self.config['git_token'] = git_token
         auth_token = f"token {self.config['git_token']}"
-        auth_token_max_retries = self.config['auth_token_max_retries']
-        self.myGithubApi = MyGithubApi(auth_token, auth_token_max_retries)
+        self.myGithubApi = MyGithubApi(
+            auth_token,
+            self.config.get('auth_token_max_retries', 5),
+            self.config.get('github_min_await', 5.0),
+            self.config.get('github_max_await', 15.0)
+        )
 
     def initialiseVariables(self):
         self.config = {}
@@ -75,37 +79,56 @@ class RiskyCodeHunter:
     def checkAuthToken(self):
         return self.myGithubApi.checkAuthTokenRetries(self.myGithubApi.auth_token_max_retries)
 
-    async def scanRepo(self, repo_url):
-        if not self.checkAuthToken():
-            return False, None
-        if not repo_url:
-            raise Exception("No repository URL has been provided!")
-        risky_repo_scan = RiskyRepo(
-            get_repo_author(repo_url),
-            get_repo_name(repo_url),
-            self.config
-        )
-        self.risky_repo_list.append(risky_repo_scan)
+    async def checkAuthTokenAsync(self, session):
+        return await self.myGithubApi.checkAuthTokenRetriesAsync(session, self.myGithubApi.auth_token_max_retries)
 
-        contributors: List[Contributor]
-        contributors = await risky_repo_scan.getContributorsList(self.myGithubApi)
-        await self.checkAndFillRepoContributorWrap(risky_repo_scan)
-        await risky_repo_scan.updateRiskyList()
+    async def scanRepo(self, repo_url) -> Tuple[bool, RiskyRepo]:
+        session = aiohttp.ClientSession()
+        try:
+            if not await self.checkAuthTokenAsync(session):
+                return False, None
+            if not repo_url:
+                raise Exception("No repository URL has been provided!")
+            risky_repo_scan = RiskyRepo(
+                get_repo_author(repo_url),
+                get_repo_name(repo_url),
+                self.config
+            )
+            self.risky_repo_list.append(risky_repo_scan)
 
+            contributors: List[Contributor]
+            contributors = await risky_repo_scan.getContributorsList(session, self.myGithubApi)
+            await self.checkAndFillRepoContributorWrap(session, risky_repo_scan)
+            await risky_repo_scan.updateRiskyList()
+        finally:
+            await session.close()
         return True, risky_repo_scan
 
-    async def checkAndFillRepoContributorWrap(self, risky_repo_scan: RiskyRepo) -> List[Contributor]:
-        tasks = []
+    async def __scanRepoSuppress(self, repo_url) -> Tuple[bool, RiskyRepo]:
+        result = False, None
+        try:
+            result = await self.scanRepo(repo_url)
+        except Exception as e:
+            print(e)
+        return result
 
+    async def scanRepos(self, repo_url_list) -> List[Tuple[bool, RiskyRepo]]:
+        tasks = []
+        for repo_url in repo_url_list:
+            tasks.append(asyncio.ensure_future(self.__scanRepoSuppress(repo_url)))
+        results = list(await asyncio.gather(*tasks))
+        return results
+
+    async def checkAndFillRepoContributorWrap(self, session, risky_repo_scan: RiskyRepo) -> List[Contributor]:
+        tasks = []
         user_contributors = []
         for contributor in risky_repo_scan.contributorsList:
             if contributor.url and isinstance(contributor.url, str):
                 user_contributors.append(contributor)
 
-        async with aiohttp.ClientSession() as session:
-            for contributor in user_contributors:
-                tasks.append(asyncio.ensure_future(self.checkAndFillContributor(session, risky_repo_scan, contributor)))
-            contributors = await asyncio.gather(*tasks)
+        for contributor in user_contributors:
+            tasks.append(asyncio.ensure_future(self.checkAndFillContributor(session, risky_repo_scan, contributor)))
+        contributors = list(await asyncio.gather(*tasks))
         return contributors
 
     async def checkAndFillContributor(self, session, risky_repo_scan: RiskyRepo, contributor: Contributor):
