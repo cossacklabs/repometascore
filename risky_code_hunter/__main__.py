@@ -58,42 +58,43 @@ def main():
     reposResultList: List[Tuple[bool, RiskyRepo]]
 
     start_time = time.time()
-    if len(args.url) == 1:
-        reposResultList = [asyncio.run(riskyCodeHunter.scanRepo(args.url[0]))]
-    elif len(args.url) > 1:
+    if args.url:
         reposResultList = asyncio.run(riskyCodeHunter.scanRepos(args.url))
     else:
         raise Exception("No URLs were provided!")
     end_time = time.time()
 
     json_output = []
-    str_result = ""
+    str_result = []
+    separator = '=' * 40
     for is_success, repoResult in reposResultList:
         if is_success is True:
             if args.outputType == 'human':
-                if not args.outputfile:
-                    repoResult.printFullReport()
-                    print(("="*40 + "\n")*6)
+                if args.outputfile:
+                    str_result.append(repoResult.getFullReport())
+                    str_result.extend(
+                        separator for _ in range(6)
+                    )
                 else:
-                    str_result += repoResult.getFullReport()
-                    str_result += ("=" * 40 + "\n") * 6 + "\n"
+                    repoResult.printFullReport()
+                    print("\n".join([separator for _ in range(6)]))
             elif args.outputType == 'json':
                 json_output.append(repoResult.getRiskyJSON())
         else:
             raise Exception("Some error occured while scanning repo. Sorry.")
 
     if args.outputType == 'json':
-        if not args.outputfile:
-            print(json.dumps(json_output, indent=4))
+        if args.outputfile:
+            str_result.append(json.dumps(json_output, indent=4))
         else:
-            str_result += json.dumps(json_output, indent=4) + "\n"
+            print(json.dumps(json_output, indent=4))
 
     if args.outputfile:
         try:
             with open(args.outputfile, "w") as out_file:
-                out_file.write(str_result)
+                out_file.write("\n".join(str_result))
         except Exception as err:
-            print(str_result)
+            print("\n".join(str_result))
             print(err)
 
     print(f"--- {end_time - start_time} seconds ---")

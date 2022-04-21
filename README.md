@@ -27,7 +27,9 @@ Variables, that are used in config file:
 |--------------------------|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `risk_boundary_value`    | `float`      | Used in RiskyRepo. Sets boundary value, which helps us to define whether should we consider contributor as risky one or not. It compares `Contributor.riskRating` value with boundary value. |
 | `git_token`              | `str`        | Your GitHub token as string.                                                                                                                                                                 |
-| `auth_token_max_retries` | `int`        | Shows how many times we should try to reconnect to users GitHub token.                                                                                                                       |
+| `github_min_await`       | `float`      | Opyional. Default `5.0`. Minimum await time (in seconds) while GitHubAPI responds with timeouts.                                                                                             |
+| `github_max_await`       | `float`      | Optional. Default `15.0`. Maximum await time (in seconds) while GitHubAPI responds with timeouts.                                                                                            |
+| `auth_token_max_retries` | `int`        | Optional. Default `5`. Shows how many times we should try to reconnect to users GitHub token.                                                                                                  |
 | `fields`                 | `List[Dict]` | List of fields with rules. More detailed about this variable in the next topic.                                                                                                              |
 
 
@@ -42,6 +44,95 @@ Variables, that are used in config file:
 | `triggers`   | `List[str]` | Currently this is a list of strings. Program takes data (strings) from contributor class. Modifies it to lowercase string. And then checks if data from contributor matches every trigger. |
 | `type`       | `str`       | String-name what can help user to understand what type of rule has been detected (e.g `Strong`, `Considerable`, `Weak`, etc.).                                                            |
 | `risk_value` | `float`     | This value accumulates to `Contributor.riskRating` variable. Also can be negative one for some extra cases.                                                                               |
+
+# Main Classses
+###### All classes and methods that was not mentioned in this file - shouldn't be used by users. 
+## RiskyCodeHunter class
+### Variables
+| Variable          | Type              | Description                                                                                          | 
+|-------------------|-------------------|------------------------------------------------------------------------------------------------------|
+| `risky_repo_list` | `List[RiskyRepo]` | List of all `RiskyRepo` class objects that were or processing right now in `RiskyCodeHunter` object. |
+| `myGithubApi`     | `MyGithubApi`     | Object of `MyGithubApi` class, that was created in `RiskyCodeHunter` constructor.                    |
+| `config`          | `Dict`            | Configuration that was provided via `*.json` file. Stores as python `Dict` object.                   |
+### Methods
+| Method                                             | Return Type                    | Description                                                                                                                                                                                                                                    |
+|----------------------------------------------------|--------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `async checkAuthToken()`                           | `bool`                         | Check github auth token, that has been provided into `RiskyCodeHunter` class.                                                                                                                                                                  |
+| `async scanRepo( repo_url: str )`                  | `Tuple[bool, RiskyRepo]`       | Scan GitHub repository via provided URL. Can throw Exceptions that needed to be handled.                                                                                                                                                       |
+| `async scanRepos( repos_url_list: Iterable[str] )` | `List[Tuple[bool, RiskyRepo]]` | Scan several GitHub repositories simultaneously. Will await untill every repo would get scanned or throw an exception. Also suppresses all exceptions from internal scanning to not interfere with other scans. Should not return an Exception |
+
+## RiskyRepo
+### Variables
+| Variable                   | Type                | Description                                                                                                     |
+|----------------------------|---------------------|-----------------------------------------------------------------------------------------------------------------|
+| `repo_author`              | `str`               | Repository author's login.                                                                                      |
+| `repo_name`                | `str`               | Repository name.                                                                                                |
+| `commits`                  | `int`               | Total commits count into repository made by contributors.                                                       |
+| `additions`                | `int`               | Total line additions made to the code by contributors.                                                          |
+| `deletions`                | `int`               | Total line deletions made to the code by contributors.                                                          |
+| `delta`                    | `int`               | Sum of total additions and deletions made to the code by contributors.                                          |
+| `contributors_count`       | `int`               | Total number of contributors that are going to be checked.                                                      |
+| `risky_commits`            | `int`               | Total commits count into repository made by risky contributors.                                                 |
+| `risky_additions`          | `int`               | Total line additions made to the code by risky contributors.                                                    |
+| `risky_deletions`          | `int`               | Total line deletions made to the code by risky contributors.                                                    |
+| `risky_delta`              | `int`               | Sum of total additions and deletions made to the code by risky contributors.                                    |
+| `risky_contributors_count` | `int`               | Total number of risky contributors that has been checked.                                                       |
+| `contributorsList`         | `List[Contributor]` | List of contributors that are objects of `Contributor` class that are going to be/was processed by the program. |
+| `riskyContributorsList`    | `List[Contributor]` | List of risky contributors that are objects of `Contributor` class that was processed by the program.           |
+| `riskyAuthor`              | `Contributor`       | If repository author is risky, then this value is not None.                                                     |
+| `risk_boundary_value`      | `float`             | Boundary value that filters contributors on risky and not risky ones.                                           |
+### Methods
+| Method               | Return Type | Description                                                                                                                                                                              |
+|----------------------|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `updateRiskyList()`  | `None`      | Recalculates all risky values based on `self.risk_boundary_value`.                                                                                                                       |
+| `printShortReport()` | `None`      | Prints short report (only counts and ratio). And if author is risky - his description.                                                                                                   |
+| `printFullReport()`  | `None`      | Prints info about every contributor and short report in the end.                                                                                                                         |
+| `getShortReport()`   | `str`       | Returns same info as `printShortReport()` in `str` type value and without printing it.                                                                                                   |
+| `getFullReport()`    | `str`       | Returns same info as `printFullReport()` in `str` type value and without printing it.                                                                                                    |
+| `getJSON()`          | `Dict`      | Returns `json` info about `RiskyRepo` object variables. Generated safely, so user can modify it without consequences. Don't stores info about `riskyContributorsList` and `riskyAuthor`. |
+| `getRiskyJSON()`     | `Dict`      | Returns `json` info about `RiskyRepo` object variables. Generated safely, so user can modify it without consequences. Don't stores info about `contributorsList` and `riskyAuthor`.      |
+
+## Contributor
+### Variables
+| Variable           | Type                  | Description                                                                                                                  |
+|--------------------|-----------------------|------------------------------------------------------------------------------------------------------------------------------|
+| `login`            | `str`                 | Contributor's login.                                                                                                         |
+| `url`              | `str`                 | Contributor's url to GitHub API page.                                                                                        |
+| `commits`          | `int`                 | Number of contributor's commits into specific repo.                                                                          |
+| `additions`        | `int`                 | Number of contributor's additions into the code of specific repo.                                                            |
+| `deletions`        | `int`                 | Number of contributor's deletions into the code of specific repo.                                                            |
+| `delta`            | `int`                 | Sum of contributor's additions and deletions into the code of specific repo.                                                 |
+| `location`         | `str`                 | Contributor's location from GitHub account.                                                                                  |
+| `emails`           | `List[str]`           | Contributor's emails from GitHub page and commits info from specific repo.                                                   |
+| `twitter_username` | `str`                 | Contributor's twitter username from GitHub account.                                                                          |
+| `names`            | `List[str]`           | Contributor's names from GitHub account and commits info from specific repo.                                                 |
+| `company`          | `str`                 | Contributor's location from GitHub account.                                                                                  |
+| `blog`             | `str`                 | Contributor's blog url from GitHub account.                                                                                  |
+| `bio`              | `str`                 | Contributor's bio from GitHub account.                                                                                       |
+| `riskRating`       | `float`               | Contributor's risk rating based on sum triggered rules `riskValue`.                                                          |
+| `triggeredRules`   | `List[TriggeredRule]` | Contributor's list of triggered rules based on config in `RiskyCodeHunter` and data from current `Contributor` class object. |
+### Methods
+| Method               | Return Type | Description                                                                                                             |
+|----------------------|-------------|-------------------------------------------------------------------------------------------------------------------------|
+| `getJSON()`          | `Dict`      | Returns `json` info about `Contributor` object variables. Generated safely, so user can modify it without consequences. |
+# Secondary Classes
+## TriggeredRule
+### Variables
+| Variable      | Type    | Description                                                                                                               |
+|---------------|---------|---------------------------------------------------------------------------------------------------------------------------|
+| `type`        | `str`   | Triggered Rule's human readable type (as of `Strong`, `Weak`, etc).                                                       |
+| `fieldName`   | `str`   | `Contributor's` name of variable that triggered specific rule.                                                            |
+| `trigger`     | `str`   | Specific trigger that was triggered by `Contributor's` data.                                                              |
+| `value`       | `str`   | Data that triggered rule.                                                                                                 |
+| `riskValue`   | `float` | Float score that would be summed to `Contributor.riskRating`.                                                             |
+| `description` | `str`   | Human readable description of triggered rule. Generates automatically by `TriggeredRule.getPrint()` in class constructor. |
+### Methods
+### Methods
+| Method       | Return Type | Description                                                                                                               |
+|--------------|-------------|---------------------------------------------------------------------------------------------------------------------------|
+| `getPrint()` | `str`       | Generates human readable description based on object's variables.                                                         |
+| `getJSON()`  | `Dict`      | Returns `json` info about `TriggeredRule` object variables. Generated safely, so user can modify it without consequences. |
+
 
 # Installation
 

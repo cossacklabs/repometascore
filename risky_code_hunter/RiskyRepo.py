@@ -40,18 +40,8 @@ class RiskyRepo:
 
     # Provide
     def __init__(self, repo_author, repo_name, config: dict = None):
-        self.initialiseVariables()
-        if not config:
-            return
         self.repo_author = repo_author
         self.repo_name = repo_name
-        self.risk_boundary_value = config.get('risk_boundary_value', 0.9)
-        self.riskyContributorsList = []
-        return
-
-    def initialiseVariables(self):
-        self.repo_author = str()
-        self.repo_name = str()
         self.commits = int()
         self.additions = int()
         self.deletions = int()
@@ -66,6 +56,11 @@ class RiskyRepo:
         self.riskyContributorsList = []
         self.riskyAuthor = None
         self.risk_boundary_value = float()
+        if config:
+            self.risk_boundary_value = config.get('risk_boundary_value', 0.9)
+        else:
+            self.risk_boundary_value = 0.9
+        return
 
     def addContributor(self, contributor: Contributor):
         if not isinstance(contributor, Contributor):
@@ -121,39 +116,41 @@ class RiskyRepo:
 
     # Print Full Human-Readable report
     def getFullReport(self) -> str:
-        result = ""
+        separator = '=' * 40
+        result = []
         for contributor in self.riskyContributorsList:
             if self.repo_author is contributor.login:
                 continue
-            result += "That contributor triggered rules:\n"
+            result.append("That contributor triggered rules:")
             for triggeredRule in contributor.triggeredRules:
-                result += triggeredRule.description + "\n"
+                result.append(triggeredRule.description)
             riskyDict = contributor.getJSON()
             riskyDict.pop('triggeredRules', None)
-            result += json.dumps(riskyDict, indent=4) + "\n"
-            result += "=" * 40 + "\n"
-        result += self.getShortReport() + "\n"
-        return result
+            result.append(json.dumps(riskyDict, indent=4))
+            result.append(separator)
+        result.append(self.getShortReport())
+        return "\n".join(result)
 
     # Print short human-readable report
     def getShortReport(self) -> str:
-        result = ""
-        result += f"Risky commits count: {self.risky_commits} \t Risky delta count: {self.risky_delta}\n"
-        result += f"Total commits count: {self.commits} \t Total delta count: {self.delta}\n"
-        result += f"Risky commits ratio: {self.risky_commits / self.commits} \t" \
-                  f"Risky delta ratio: {self.risky_delta / self.delta}\n"
-        result += f"{self.risky_contributors_count}/{self.contributors_count} contributors are risky\n"
+        separator = '=' * 40
+        result = []
+        result.append(f"Risky commits count: {self.risky_commits} \t Risky delta count: {self.risky_delta}")
+        result.append(f"Total commits count: {self.commits} \t Total delta count: {self.delta}")
+        result.append(f"Risky commits ratio: {self.risky_commits / self.commits} \t"
+                      f"Risky delta ratio: {self.risky_delta / self.delta}")
+        result.append(f"{self.risky_contributors_count}/{self.contributors_count} contributors are risky")
 
         if self.riskyAuthor:
-            result += "=" * 40 + "\n"
-            result += "Warning author of repo suspicious!\n"
-            result += "That contributor triggered rules:\n"
+            result.append(separator)
+            result.append("Warning author of repo suspicious!")
+            result.append("That contributor triggered rules:")
             for triggeredRule in self.riskyAuthor.triggeredRules:
-                result += triggeredRule.description + "\n"
+                result.append(triggeredRule.description)
             riskyDict = self.riskyAuthor.getJSON()
             riskyDict.pop('triggeredRules', None)
-            result += json.dumps(riskyDict, indent=4) + "\n"
-        return result
+            result.append(json.dumps(riskyDict, indent=4))
+        return "\n".join(result)
 
     async def getContributorsList(self, session, myGithubApi: MyGithubApi) -> List[Contributor]:
         contributors_info = []
@@ -189,13 +186,14 @@ class RiskyRepo:
 
         return self.contributorsList
 
-    async def updateRiskyList(self):
+    def updateRiskyList(self):
         self.risky_commits = 0
         self.risky_additions = 0
         self.risky_deletions = 0
         self.risky_delta = 0
         self.risky_contributors_count = 0
         self.riskyContributorsList.clear()
+        self.riskyAuthor = None
 
         for contributor in self.contributorsList:
             if contributor.riskRating < self.risk_boundary_value:
@@ -206,6 +204,8 @@ class RiskyRepo:
             self.risky_delta += contributor.delta
             self.risky_contributors_count += 1
             self.riskyContributorsList.append(contributor)
+            if contributor.login == self.repo_author:
+                self.riskyAuthor = contributor
         return
 
     def getJSON(self) -> Dict:

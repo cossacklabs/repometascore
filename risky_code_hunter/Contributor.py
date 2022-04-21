@@ -34,12 +34,6 @@ class Contributor:
     triggeredRules: List[TriggeredRule]
 
     def __init__(self, input_dict=None):
-        self.initialiseVariables()
-        if input_dict:
-            self.addValue(input_dict)
-        return
-
-    def initialiseVariables(self):
         self.login = str()
         self.url = str()
         self.commits = int()
@@ -55,7 +49,9 @@ class Contributor:
         self.bio = str()
         self.riskRating = float()
         self.triggeredRules = []
-
+        if input_dict:
+            self.addValue(input_dict)
+        return
 
     # Get some dict with values
     # If found interesting values
