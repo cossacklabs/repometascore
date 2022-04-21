@@ -29,8 +29,8 @@ Variables, that are used in config file:
 | `git_token`              | `str`        | Your GitHub token as string.                                                                                                                                                                 |
 | `github_min_await`       | `float`      | Opyional. Default `5.0`. Minimum await time (in seconds) while GitHubAPI responds with timeouts.                                                                                             |
 | `github_max_await`       | `float`      | Optional. Default `15.0`. Maximum await time (in seconds) while GitHubAPI responds with timeouts.                                                                                            |
-| `auth_token_max_retries` | `int`        | Optional. Default `5`. Shows how many times we should try to reconnect to users GitHub token.                                                                                                  |
-| `fields`                 | `List[Dict]` | List of fields with rules. More detailed about this variable in the next topic.                                                                                                              |
+| `auth_token_max_retries` | `int`        | Optional. Default `5`. Shows how many times we should try to reconnect to users GitHub token.                                                                                                |
+| `fields`                 | `List[Dict]` | List of fields with rules. More detailed about this variable in the next section.                                                                                                            |
 
 
 ### Fields
