@@ -14,73 +14,41 @@ class MyGithubApi:
     min_await: float
     max_await: float
 
-    def __init__(self, auth_token, auth_token_max_retries, min_await, max_await):
-        self.initialiseVariables()
+    def __init__(self, auth_token, auth_token_max_retries=5, min_await=5.0, max_await=15.0):
         self.auth_token = auth_token
+        self.auth_token_check = False
         self.auth_token_max_retries = auth_token_max_retries
         self.min_await = min_await
         self.max_await = max_await
 
-    def initialiseVariables(self):
-        self.auth_token = str()
-        self.auth_token_check = False
-        self.auth_token_max_retries = int()
-        self.min_await = int()
-        self.max_await = int()
-
-    async def checkAuthTokenAsync(self, session: aiohttp.ClientSession) -> bool:
-        print("Checking Auth Token Async")
-
+    async def checkAuthToken(self, session: aiohttp.ClientSession) -> bool:
         resp = await self.getAsyncRequest(
             session=session,
             url='https://api.github.com'
         )
+
+        # Currently this piece of the code is redundant
+        # As we successfuly will get response only from
+        # 200 OK status code
         if resp.status == 401:
-            print("Token is not valid!")
             raise Exception("Your github token is not valid. Github returned err validation code!")
         elif resp.status == 200:
-            print("Auth Token is valid!")
             self.auth_token_check = True
             return True
 
-        print("Some error occurred while requesting github api")
+        # some other error occured
+        # currently redundant part of the code
         self.auth_token_check = False
         return False
 
-    def checkAuthToken(self) -> bool:
-        print("Checking Auth Token")
-
-        resp = self.getSyncRequest(
-            url='https://api.github.com',
-        )
-        if resp.status_code == 401:
-            print("Token is not valid!")
-            raise Exception("Your github token is not valid. Github returned err validation code!")
-        elif resp.status_code == 200:
+    async def checkAuthTokenRetries(self, session: aiohttp.ClientSession, retries_count: int) -> bool:
+        count = 0
+        while not self.auth_token_check and count < retries_count:
+            await self.checkAuthToken(session)
+            count += 1
+            if not self.auth_token_check:
+                print(f"Retry one more time! Try count: {count}")
             print("Auth Token is valid!")
-            self.auth_token_check = True
-            return True
-
-        print("Some error occurred while requesting github api")
-        self.auth_token_check = False
-        return False
-
-    def checkAuthTokenRetries(self, retries_count) -> bool:
-        count = 0
-        while not self.auth_token_check and count < retries_count:
-            self.checkAuthToken()
-            count += 1
-            if not self.auth_token_check:
-                print(f"Retry one more time! Try count: {count}")
-        return self.auth_token_check
-
-    async def checkAuthTokenRetriesAsync(self, session: aiohttp.ClientSession, retries_count: int) -> bool:
-        count = 0
-        while not self.auth_token_check and count < retries_count:
-            await self.checkAuthTokenAsync(session)
-            count += 1
-            if not self.auth_token_check:
-                print(f"Retry one more time! Try count: {count}")
         return self.auth_token_check
 
     # get list of all contributors:
@@ -156,13 +124,15 @@ class MyGithubApi:
                 result = resp
                 if resp.status == 404:
                     raise Exception(
-                        "Could not found this url: "
-                        f"{url}"
+                        "Error, 404 status!\n"
+                        f"Status code: {resp.status}\n"
+                        f"Response:\n{await result.json()}"
                     )
                 elif resp.status == 401:
                     raise Exception(
-                        "Your github token is not valid. Github returned err validation code!"
-                        f"Status: {resp.status}"
+                        "Your github token is not valid. Github returned err validation code!\n"
+                        f"Status code: {resp.status}\n"
+                        f"Response:\n{await result.json()}"
                     )
                 elif resp.status == 202:
                     await self.githubLimitTimeout(retry)
@@ -179,45 +149,10 @@ class MyGithubApi:
             break
         return result
 
-    # function-helper
-    # to make async request
-    def getSyncRequest(self, url) -> requests.Response:
-        exceeded_msg = 'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.'
-        while True:
-            resp = requests.get(
-                url=url,
-                headers={
-                    'Authorization': self.auth_token,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            )
-            result = resp
-            body = resp.json()
-            if resp.status_code == 404:
-                raise Exception(
-                    "Could not found this repo: "
-                    f"{url}"
-                )
-            elif resp.status_code == 401:
-                raise Exception(
-                    "Your github token is not valid. Github returned err validation code!"
-                    f"Status: {resp.status_code}"
-                )
-            elif resp.status_code == 202:
-                time.sleep(random.uniform(0, 0.8))
-                continue
-            elif resp.status_code == 403 and isinstance(body, dict) and body.get('message', str()) == exceeded_msg:
-                time.sleep(random.uniform(0, 0.8))
-                continue
-            elif resp.status_code != 200:
-                raise Exception(
-                    f"Non-predicted response from server\n"
-                    f"Status code: {resp.status_code}\n"
-                    f"Response:\n{result}"
-                )
-            break
-        return result
-
+    # will sleep current async flow on time
+    # based on retry number
+    # and random value between self.min_await
+    # and self.max_await
     async def githubLimitTimeout(self, retry_num):
         await asyncio.sleep(
             random.uniform(

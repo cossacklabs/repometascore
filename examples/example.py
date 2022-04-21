@@ -129,6 +129,22 @@ def main():
                 f"Risk Value (risk rating of triggered rule): {triggeredRule.riskValue}",
                 f"Description (human-readable): {triggeredRule.description}"
             )
+
+    # You decided to change risk boundary value while running program
+
+    # set new boundary value
+    repoResult.risk_boundary_value = 2
+
+    # recalculate repoResult risky values and risky contributors
+    repoResult.updateRiskyList()
+
+    # Use it
+    # Process through all risky contributors
+    for contributor in repoResult.riskyContributorsList:
+        # Process through all their triggered rules
+        for triggeredRule in contributor.triggeredRules:
+            # same as usual contributors
+            continue
     return
 
 
