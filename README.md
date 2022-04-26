@@ -25,7 +25,7 @@ Variables, that are used in config file:
 ### Root
 | Variable                 | Type         | Description                                                                                                                                                                                  | 
 |--------------------------|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `risk_boundary_value`    | `float`      | Used in RiskyRepo. Sets boundary value, which helps us to define whether should we consider contributor as risky one or not. It compares `Contributor.riskRating` value with boundary value. |
+| `risk_boundary_value`    | `float`      | Used in Repo. Sets boundary value, which helps us to define whether should we consider contributor as risky one or not. It compares `Contributor.riskRating` value with boundary value. |
 | `git_token`              | `str`        | Your GitHub token as string.                                                                                                                                                                 |
 | `github_min_await`       | `float`      | Opyional. Default `5.0`. Minimum await time (in seconds) while GitHubAPI responds with timeouts.                                                                                             |
 | `github_max_await`       | `float`      | Optional. Default `15.0`. Maximum await time (in seconds) while GitHubAPI responds with timeouts.                                                                                            |
@@ -49,19 +49,19 @@ Variables, that are used in config file:
 ###### All classes and methods that was not mentioned in this file - shouldn't be used by users. 
 ## RiskyCodeHunter class
 ### Variables
-| Variable          | Type              | Description                                                                                          | 
-|-------------------|-------------------|------------------------------------------------------------------------------------------------------|
-| `risky_repo_list` | `List[RiskyRepo]` | List of all `RiskyRepo` class objects that were or processing right now in `RiskyCodeHunter` object. |
-| `myGithubApi`     | `MyGithubApi`     | Object of `MyGithubApi` class, that was created in `RiskyCodeHunter` constructor.                    |
-| `config`          | `Dict`            | Configuration that was provided via `*.json` file. Stores as python `Dict` object.                   |
+| Variable    | Type         | Description                                                                                     | 
+|-------------|--------------|-------------------------------------------------------------------------------------------------|
+| `repo_list` | `List[Repo]` | List of all `Repo` class objects that were or processing right now in `RiskyCodeHunter` object. |
+| `githubApi` | `GithubApi`  | Object of `GithubApi` class, that was created in `RiskyCodeHunter` constructor.                 |
+| `config`    | `Dict`       | Configuration that was provided via `*.json` file. Stores as python `Dict` object.              |
 ### Methods
-| Method                                             | Return Type                    | Description                                                                                                                                                                                                                                    |
-|----------------------------------------------------|--------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `async checkAuthToken()`                           | `bool`                         | Check github auth token, that has been provided into `RiskyCodeHunter` class.                                                                                                                                                                  |
-| `async scanRepo( repo_url: str )`                  | `Tuple[bool, RiskyRepo]`       | Scan GitHub repository via provided URL. Can throw Exceptions that needed to be handled.                                                                                                                                                       |
-| `async scanRepos( repos_url_list: Iterable[str] )` | `List[Tuple[bool, RiskyRepo]]` | Scan several GitHub repositories simultaneously. Will await untill every repo would get scanned or throw an exception. Also suppresses all exceptions from internal scanning to not interfere with other scans. Should not return an Exception |
+| Method                                             | Return Type               | Description                                                                                                                                                                                                                                     |
+|----------------------------------------------------|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `async checkAuthToken()`                           | `bool`                    | Check github auth token, that has been provided into `RiskyCodeHunter` class.                                                                                                                                                                   |
+| `async scanRepo( repo_url: str )`                  | `Tuple[bool, Repo]`       | Scan GitHub repository via provided URL. Can throw Exceptions that needed to be handled.                                                                                                                                                        |
+| `async scanRepos( repos_url_list: Iterable[str] )` | `List[Tuple[bool, Repo]]` | Scan several GitHub repositories simultaneously. Will await untill every repo would get scanned or throw an exception. Also suppresses all exceptions from internal scanning to not interfere with other scans. Should not return an Exception. |
 
-## RiskyRepo
+## Repo
 ### Variables
 | Variable                   | Type                | Description                                                                                                     |
 |----------------------------|---------------------|-----------------------------------------------------------------------------------------------------------------|
@@ -82,15 +82,15 @@ Variables, that are used in config file:
 | `riskyAuthor`              | `Contributor`       | If repository author is risky, then this value is not None.                                                     |
 | `risk_boundary_value`      | `float`             | Boundary value that filters contributors on risky and not risky ones.                                           |
 ### Methods
-| Method               | Return Type | Description                                                                                                                                                                              |
-|----------------------|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `updateRiskyList()`  | `None`      | Recalculates all risky values based on `self.risk_boundary_value`.                                                                                                                       |
-| `printShortReport()` | `None`      | Prints short report (only counts and ratio). And if author is risky - his description.                                                                                                   |
-| `printFullReport()`  | `None`      | Prints info about every contributor and short report in the end.                                                                                                                         |
-| `getShortReport()`   | `str`       | Returns same info as `printShortReport()` in `str` type value and without printing it.                                                                                                   |
-| `getFullReport()`    | `str`       | Returns same info as `printFullReport()` in `str` type value and without printing it.                                                                                                    |
-| `getJSON()`          | `Dict`      | Returns `json` info about `RiskyRepo` object variables. Generated safely, so user can modify it without consequences. Don't stores info about `riskyContributorsList` and `riskyAuthor`. |
-| `getRiskyJSON()`     | `Dict`      | Returns `json` info about `RiskyRepo` object variables. Generated safely, so user can modify it without consequences. Don't stores info about `contributorsList` and `riskyAuthor`.      |
+| Method               | Return Type | Description                                                                                                                                                                         |
+|----------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `updateRiskyList()`  | `None`      | Recalculates all risky values based on `self.risk_boundary_value`.                                                                                                                  |
+| `printShortReport()` | `None`      | Prints short report (only counts and ratio). And if author is risky - his description.                                                                                              |
+| `printFullReport()`  | `None`      | Prints info about every contributor and short report in the end.                                                                                                                    |
+| `getShortReport()`   | `str`       | Returns same info as `printShortReport()` in `str` type value and without printing it.                                                                                              |
+| `getFullReport()`    | `str`       | Returns same info as `printFullReport()` in `str` type value and without printing it.                                                                                               |
+| `getJSON()`          | `Dict`      | Returns `json` info about `Repo` object variables. Generated safely, so user can modify it without consequences. Don't stores info about `riskyContributorsList` and `riskyAuthor`. |
+| `getRiskyJSON()`     | `Dict`      | Returns `json` info about `Repo` object variables. Generated safely, so user can modify it without consequences. Don't stores info about `contributorsList` and `riskyAuthor`.      |
 
 ## Contributor
 ### Variables

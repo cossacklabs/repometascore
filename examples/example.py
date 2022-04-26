@@ -2,7 +2,7 @@ import asyncio
 import json
 
 from risky_code_hunter.RiskyCodeHunter import RiskyCodeHunter
-from risky_code_hunter.RiskyRepo import RiskyRepo
+from risky_code_hunter.RiskyRepo import Repo
 from risky_code_hunter.Contributor import Contributor
 from risky_code_hunter.TriggeredRule import TriggeredRule
 
@@ -18,7 +18,7 @@ def main():
     riskyCodeHunter = RiskyCodeHunter(config=config_path, git_token=git_token)
     riskyCodeHunter.checkAuthToken()
 
-    repoResult: RiskyRepo
+    repoResult: Repo
     is_success, repoResult = asyncio.run(riskyCodeHunter.scanRepo(repo_url))
     if is_success is True:
         repoResult.printFullReport()
@@ -33,10 +33,10 @@ def main():
     print(json.dumps(risky_json, indent=4))
 
     # All values in repoResult can be read, but not be written!
-    print("All values in classes RiskyRepo, Contributor and TriggeredRule can be read, but not be written!")
+    print("All values in classes Repo, Contributor and TriggeredRule can be read, but not be written!")
 
     print(
-        "RiskyRepo fields",
+        "Repo fields",
         f"Repo author: {repoResult.repo_author}",
         f"Repo name: {repoResult.repo_name}",
         f"Details about commits in repo",

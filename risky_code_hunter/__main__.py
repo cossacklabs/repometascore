@@ -6,7 +6,7 @@ import time
 from typing import List, Tuple
 
 from risky_code_hunter.RiskyCodeHunter import RiskyCodeHunter
-from risky_code_hunter.RiskyRepo import RiskyRepo
+from risky_code_hunter.RiskyRepo import Repo
 
 
 def main():
@@ -55,9 +55,10 @@ def main():
 
     riskyCodeHunter = RiskyCodeHunter(config=args.config, git_token=git_token)
 
-    reposResultList: List[Tuple[bool, RiskyRepo]]
+    reposResultList: List[Tuple[bool, Repo]]
 
     start_time = time.time()
+    reposResultList = []
     if args.url:
         reposResultList = asyncio.run(riskyCodeHunter.scanRepos(args.url))
     else:
