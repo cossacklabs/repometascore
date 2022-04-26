@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-from .MyGithubApi import MyGithubApi
+from .MyGithubApi import GithubApi
 from .TriggeredRule import TriggeredRule
 
 
@@ -128,19 +128,18 @@ class Contributor:
 
         return
 
-    async def fillWithInfo(self, session, repo_author, repo_name, myGithubApi: MyGithubApi):
+    async def fillWithInfo(self, repo_author, repo_name, githubApi: GithubApi):
         if not isinstance(self.url, str) or not self.url:
             return self
-        await self.fillWithCommitsInfo(session, repo_author, repo_name, myGithubApi)
-        await self.fillWithProfileInfo(session, myGithubApi)
+        await self.fillWithCommitsInfo(repo_author, repo_name, githubApi)
+        await self.fillWithProfileInfo(githubApi)
         return self
 
-    async def fillWithCommitsInfo(self, session, repo_author, repo_name, myGithubApi: MyGithubApi):
+    async def fillWithCommitsInfo(self, repo_author, repo_name, githubApi: GithubApi):
         if not isinstance(self.url, str) or not self.url:
             return
 
-        commit_info = await myGithubApi.getRepoCommitByAuthor(
-            session,
+        commit_info = await githubApi.getRepoCommitByAuthor(
             repo_author,
             repo_name,
             self.login,
@@ -150,8 +149,7 @@ class Contributor:
             self.addValue(commit_info[0]['commit']['author'])
 
         if self.commits > 1:
-            commit_info = await myGithubApi.getRepoCommitByAuthor(
-                session,
+            commit_info = await githubApi.getRepoCommitByAuthor(
                 repo_author,
                 repo_name,
                 self.login,
@@ -161,10 +159,10 @@ class Contributor:
                 self.addValue(commit_info[0]['commit']['author'])
         return
 
-    async def fillWithProfileInfo(self, session, myGithubApi):
+    async def fillWithProfileInfo(self, githubApi):
         if not isinstance(self.url, str) or not self.url:
             return
-        contributor_info = await myGithubApi.getUserProfileInfo(session, self.url)
+        contributor_info = await githubApi.getUserProfileInfo(self.url)
         self.addValue(contributor_info)
         return
 

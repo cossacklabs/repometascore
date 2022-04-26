@@ -1,10 +1,9 @@
 import json
-import aiohttp
 import asyncio
 from typing import List, Dict, Tuple, Iterable
 
-from .MyGithubApi import MyGithubApi
-from .RiskyRepo import RiskyRepo
+from .MyGithubApi import GithubApi
+from .RiskyRepo import Repo
 from .Contributor import Contributor
 from .TriggeredRule import TriggeredRule
 
@@ -47,8 +46,8 @@ def get_repo_author(repo_url):
 
 
 class RiskyCodeHunter:
-    risky_repo_list: List[RiskyRepo]
-    myGithubApi: MyGithubApi
+    repo_list: List[Repo]
+    githubApi: GithubApi
     config: Dict
 
     def __init__(self, config, git_token=None):
@@ -56,13 +55,13 @@ class RiskyCodeHunter:
         if git_token:
             self.config['git_token'] = git_token
         auth_token = f"token {self.config['git_token']}"
-        self.myGithubApi = MyGithubApi(
+        self.githubApi = GithubApi(
             auth_token,
             self.config.get('auth_token_max_retries', 5),
             self.config.get('github_min_await', 5.0),
             self.config.get('github_max_await', 15.0)
         )
-        self.risky_repo_list = []
+        self.repo_list = []
 
     # load config via config file
     # if file not found or was not provided
@@ -76,71 +75,58 @@ class RiskyCodeHunter:
         except FileNotFoundError:
             raise Exception("Wrong config file has been provided!")
 
-    async def checkAuthToken(self, session: aiohttp.ClientSession=None) -> bool:
-        if not session:
-            async with aiohttp.ClientSession() as session:
-                return await self.myGithubApi.checkAuthTokenRetries(session, self.myGithubApi.auth_token_max_retries)
-        return await self.myGithubApi.checkAuthTokenRetries(session, self.myGithubApi.auth_token_max_retries)
+    async def checkAuthToken(self) -> bool:
+        return await self.githubApi.checkAuthTokenRetries(self.githubApi.auth_token_max_retries)
 
-    async def scanRepo(self, repo_url, session: aiohttp.ClientSession=None) -> Tuple[bool, RiskyRepo]:
-        closeSession = False
-        if not session:
-            closeSession = True
-            session = aiohttp.ClientSession()
-        try:
-            if not await self.checkAuthToken(session):
-                return False, None
-            if not repo_url:
-                raise Exception("No repository URL has been provided!")
-            risky_repo_scan = RiskyRepo(
-                get_repo_author(repo_url),
-                get_repo_name(repo_url),
-                self.config
-            )
-            self.risky_repo_list.append(risky_repo_scan)
+    async def scanRepo(self, repo_url) -> Tuple[bool, Repo | None]:
+        if not await self.checkAuthToken():
+            return False, None
+        if not repo_url:
+            raise Exception("No repository URL has been provided!")
+        risky_repo_scan = Repo(
+            get_repo_author(repo_url),
+            get_repo_name(repo_url),
+            self.config
+        )
+        self.repo_list.append(risky_repo_scan)
 
-            await risky_repo_scan.getContributorsList(session, self.myGithubApi)
-            await self.__checkAndFillRepoContributorWrap(session, risky_repo_scan)
-            await risky_repo_scan.updateRiskyList()
-        finally:
-            if closeSession:
-                await session.close()
+        await risky_repo_scan.getContributorsList(self.githubApi)
+        await self.__checkAndFillRepoContributorWrap(risky_repo_scan)
+        risky_repo_scan.updateRiskyList()
+
+        await self.githubApi.closeCurrSession()
         return True, risky_repo_scan
 
-    async def __scanRepoSuppress(self, repo_url, session: aiohttp.ClientSession=None) -> Tuple[bool, RiskyRepo]:
-        result = False, None
-        try:
-            result = await self.scanRepo(repo_url=repo_url, session=session)
-        except Exception as e:
-            print(e)
-        return result
-
-    async def scanRepos(self, repo_url_list: Iterable[str]) -> List[Tuple[bool, RiskyRepo]]:
-        async with aiohttp.ClientSession() as session:
-            if not await self.checkAuthToken(session):
-                return []
-            tasks = []
-            for repo_url in repo_url_list:
-                tasks.append(asyncio.ensure_future(self.__scanRepoSuppress(repo_url, session)))
-            results = list(await asyncio.gather(*tasks))
+    async def scanRepos(self, repo_url_list: Iterable[str]) -> List[Tuple[bool, Repo]]:
+        if not await self.checkAuthToken():
+            return []
+        tasks = []
+        for repo_url in repo_url_list:
+            tasks.append(asyncio.ensure_future(self.scanRepo(repo_url)))
+        results = list(await asyncio.gather(*tasks, return_exceptions=True))
+        for result in results:
+            if isinstance(result, Exception):
+                print(result)
+                results[results.index(result)] = False, None
+        await self.githubApi.closeCurrSession()
         return results
 
-    async def __checkAndFillRepoContributorWrap(self, session, risky_repo_scan: RiskyRepo) -> List[Contributor]:
+    async def __checkAndFillRepoContributorWrap(self, repo_scan: Repo) -> List[Contributor]:
         tasks = []
         user_contributors = []
-        for contributor in risky_repo_scan.contributorsList:
+        for contributor in repo_scan.contributorsList:
             if contributor.url and isinstance(contributor.url, str):
                 user_contributors.append(contributor)
 
         for contributor in user_contributors:
-            tasks.append(asyncio.ensure_future(self.__checkAndFillContributor(session, risky_repo_scan, contributor)))
+            tasks.append(asyncio.ensure_future(self.__checkAndFillContributor(repo_scan, contributor)))
         contributors = list(await asyncio.gather(*tasks))
         return contributors
 
-    async def __checkAndFillContributor(self, session, risky_repo_scan: RiskyRepo, contributor: Contributor):
-        contributor = await contributor.fillWithInfo(session, risky_repo_scan.repo_author, risky_repo_scan.repo_name, self.myGithubApi)
+    async def __checkAndFillContributor(self, repo_scan: Repo, contributor: Contributor):
+        contributor = await contributor.fillWithInfo(repo_scan.repo_author, repo_scan.repo_name, self.githubApi)
         contributor = await self.__checkContributor(contributor)
-        if contributor.riskRating <= risky_repo_scan.risk_boundary_value + 3:
+        if contributor.riskRating <= repo_scan.risk_boundary_value + 3:
             ## TODO additional info from github repo
             ## clone githubrepo and check commit timezones
             # self.checkTimezones(cloned_repo_path, contributor.emails)

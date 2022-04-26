@@ -1,14 +1,11 @@
-import asyncio
 import json
 from typing import List, Dict
 
-import aiohttp
-
-from .MyGithubApi import MyGithubApi
+from .MyGithubApi import GithubApi
 from .Contributor import Contributor
 
 
-class RiskyRepo:
+class Repo:
     # Repo main info
     repo_author: str
     repo_name: str
@@ -31,7 +28,7 @@ class RiskyRepo:
     contributorsList: List[Contributor]
     # Risky contributors list
     riskyContributorsList: List[Contributor]
-    riskyAuthor: Contributor
+    riskyAuthor: Contributor | None
 
     # Boundary value that helps us
     # to determine if contributor
@@ -56,10 +53,9 @@ class RiskyRepo:
         self.riskyContributorsList = []
         self.riskyAuthor = None
         self.risk_boundary_value = float()
-        if config:
-            self.risk_boundary_value = config.get('risk_boundary_value', 0.9)
-        else:
-            self.risk_boundary_value = 0.9
+        if not config:
+            config = {}
+        self.risk_boundary_value = config.get('risk_boundary_value', 0.9)
         return
 
     def addContributor(self, contributor: Contributor):
@@ -152,13 +148,13 @@ class RiskyRepo:
             result.append(json.dumps(riskyDict, indent=4))
         return "\n".join(result)
 
-    async def getContributorsList(self, session, myGithubApi: MyGithubApi) -> List[Contributor]:
+    async def getContributorsList(self, myGithubApi: GithubApi) -> List[Contributor]:
         contributors_info = []
         login_contributor = {}
 
         # get list of all contributors:
         # anonymous contributors are currently turned off
-        contributors_json = await myGithubApi.getRepoContributors(session, self.repo_author, self.repo_name)
+        contributors_json = await myGithubApi.getRepoContributors(self.repo_author, self.repo_name)
         for contributor in contributors_json:
             contributor_obj = Contributor(contributor)
             contributors_info.append(contributor_obj)
@@ -166,7 +162,7 @@ class RiskyRepo:
                 login_contributor[contributor_obj.login] = contributor_obj
 
         # get contributors with stats (only top100)
-        contributors_json = await myGithubApi.getRepoContributorsStats(session, self.repo_author, self.repo_name)
+        contributors_json = await myGithubApi.getRepoContributorsStats(self.repo_author, self.repo_name)
         for contributor in contributors_json:
             if login_contributor.get(contributor['author']['login']):
                 contributor_obj = login_contributor.get(contributor['author']['login'])
