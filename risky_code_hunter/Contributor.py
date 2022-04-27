@@ -133,6 +133,8 @@ class Contributor:
             return self
         await self.fillWithCommitsInfo(repo_author, repo_name, githubApi)
         await self.fillWithProfileInfo(githubApi)
+        await self.fillWithTwitterLocation(githubApi)
+        await self.fillWithBlogDomain(githubApi)
         return self
 
     async def fillWithCommitsInfo(self, repo_author, repo_name, githubApi: GithubApi):
@@ -164,6 +166,18 @@ class Contributor:
             return
         contributor_info = await githubApi.getUserProfileInfo(self.url)
         self.addValue(contributor_info)
+        return
+
+    async def fillWithTwitterLocation(self, githubApi):
+        if not isinstance(self.twitter_username, str) or not self.twitter_username:
+            return
+        ## TODO: add getting twitter location
+        return
+
+    async def fillWithBlogDomain(self, githubApi):
+        if not isinstance(self.blog, str) or not self.blog:
+            return
+        ## TODO: add filling info with blog domain info
         return
 
     def getJSON(self) -> Dict:

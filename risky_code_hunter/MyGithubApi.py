@@ -11,7 +11,6 @@ class GithubApi:
     auth_token_max_retries: int
     min_await: float
     max_await: float
-    __sessionLock: asyncio.Lock
     __session: aiohttp.ClientSession | None
 
     def __init__(self, auth_token, auth_token_max_retries=5, min_await=5.0, max_await=15.0):
@@ -20,26 +19,12 @@ class GithubApi:
         self.auth_token_max_retries = auth_token_max_retries
         self.min_await = min_await
         self.max_await = max_await
-        self.__session = None
-        self.__sessionLock = asyncio.Lock()
+        self.__session = aiohttp.ClientSession()
         return
-
-    async def __createSession(self) -> aiohttp.ClientSession:
-        async with self.__sessionLock:
-            if not self.__session or self.__session.closed:
-                self.__session = aiohttp.ClientSession()
-        return self.__session
-
-    async def __getSession(self) -> aiohttp.ClientSession:
-        session = self.__session
-        if session and not session.closed:
-            return session
-        session = await self.__createSession()
-        return session
 
     async def checkAuthToken(self, session: aiohttp.ClientSession = None) -> bool:
         if not session:
-            session = await self.__getSession()
+            session = self.__session
         resp = await self.getAsyncRequest(
             url='https://api.github.com',
             session=session
@@ -64,7 +49,7 @@ class GithubApi:
 
     async def checkAuthTokenRetries(self, retries_count: int, session: aiohttp.ClientSession = None) -> bool:
         if not session:
-            session = await self.__getSession()
+            session = self.__session
         count = 0
         while not self.auth_token_check and count < retries_count:
             await self.checkAuthToken(session)
@@ -79,7 +64,7 @@ class GithubApi:
     # https://docs.github.com/en/rest/reference/repos#list-repository-contributors
     async def getRepoContributors(self, repo_author, repo_name, anon=0, session: aiohttp.ClientSession = None) -> List:
         if not session:
-            session = await self.__getSession()
+            session = self.__session
         per_page = 100
         page_num = 1
         contributors_json = []
@@ -101,7 +86,7 @@ class GithubApi:
     # https://docs.github.com/en/rest/reference/metrics#get-all-contributor-commit-activity
     async def getRepoContributorsStats(self, repo_author, repo_name, session: aiohttp.ClientSession = None) -> List:
         if not session:
-            session = await self.__getSession()
+            session = self.__session
         contributors_resp = await self.getAsyncRequest(
             url=f"https://api.github.com/repos/{repo_author}/{repo_name}/stats/contributors",
             session=session
@@ -115,7 +100,7 @@ class GithubApi:
     # https://docs.github.com/en/rest/reference/commits#list-commits
     async def getRepoCommitByAuthor(self, repo_author, repo_name, author, commit_num, session: aiohttp.ClientSession = None) -> List:
         if not session:
-            session = await self.__getSession()
+            session = self.__session
         commit_info_resp = await self.getAsyncRequest(
             url=f"https://api.github.com/repos/{repo_author}/{repo_name}/commits"
                 f"?author={author}&per_page=1&page={commit_num}",
@@ -129,7 +114,7 @@ class GithubApi:
     # https://docs.github.com/en/rest/reference/users#get-a-user
     async def getUserProfileInfo(self, user_url, session: aiohttp.ClientSession = None) -> Dict:
         if not session:
-            session = await self.__getSession()
+            session = self.__session
         profile_info_resp = await self.getAsyncRequest(
             url=user_url,
             session=session
@@ -140,25 +125,20 @@ class GithubApi:
     # function-helper
     # to make async request
     async def getAsyncRequest(self, url, session: aiohttp.ClientSession = None) -> aiohttp.ClientResponse:
-        if not session or session.closed:
-            session = await self.__getSession()
+        if not session:
+            session = self.__session
         EXCEEDED_MSG = 'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.'
         retry = 0
         while True:
             retry += 1
-            try:
-                async with session.get(
-                        url=url,
-                        headers={
-                            'Authorization': self.auth_token,
-                            'Accept': 'application/vnd.github.v3+json'
-                        }
-                ) as resp:
-                    body = await resp.json()
-            except Exception as e:
-                if isinstance(e, RuntimeError) and str(e) == "Session is closed":
-                    session = await self.__getSession()
-                continue
+            async with session.get(
+                    url=url,
+                    headers={
+                        'Authorization': self.auth_token,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+            ) as resp:
+                body = await resp.json()
             if resp.status == 404:
                 raise Exception(
                     "Error, 404 status!\n"
@@ -198,7 +178,6 @@ class GithubApi:
         )
 
     async def closeSession(self):
-        async with self.__sessionLock:
-            if self.__session and not self.__session.closed:
-                await self.__session.close()
+        if self.__session and not self.__session.closed:
+            await self.__session.close()
         return
