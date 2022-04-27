@@ -28,7 +28,7 @@ class Repo:
     contributorsList: List[Contributor]
     # Risky contributors list
     riskyContributorsList: List[Contributor]
-    riskyAuthor: Contributor | None
+    riskyAuthor: Contributor
 
     # Boundary value that helps us
     # to determine if contributor

@@ -11,7 +11,7 @@ class GithubApi:
     auth_token_max_retries: int
     min_await: float
     max_await: float
-    __session: aiohttp.ClientSession | None
+    __session: aiohttp.ClientSession
 
     def __init__(self, auth_token, auth_token_max_retries=5, min_await=5.0, max_await=15.0):
         self.auth_token = auth_token
