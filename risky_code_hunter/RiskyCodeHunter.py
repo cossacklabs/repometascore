@@ -94,7 +94,7 @@ class RiskyCodeHunter:
         await self.__checkAndFillRepoContributorWrap(risky_repo_scan)
         risky_repo_scan.updateRiskyList()
 
-        await self.githubApi.closeCurrSession()
+        await self.githubApi.closeSession()
         return True, risky_repo_scan
 
     async def scanRepos(self, repo_url_list: Iterable[str]) -> List[Tuple[bool, Repo]]:
@@ -108,7 +108,7 @@ class RiskyCodeHunter:
             if isinstance(result, Exception):
                 print(result)
                 results[results.index(result)] = False, None
-        await self.githubApi.closeCurrSession()
+        await self.githubApi.closeSession()
         return results
 
     async def __checkAndFillRepoContributorWrap(self, repo_scan: Repo) -> List[Contributor]:
