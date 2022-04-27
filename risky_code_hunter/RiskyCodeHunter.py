@@ -93,8 +93,6 @@ class RiskyCodeHunter:
         await risky_repo_scan.getContributorsList(self.githubApi)
         await self.__checkAndFillRepoContributorWrap(risky_repo_scan)
         risky_repo_scan.updateRiskyList()
-
-        await self.githubApi.closeSession()
         return True, risky_repo_scan
 
     async def scanRepos(self, repo_url_list: Iterable[str]) -> List[Tuple[bool, Repo]]:
@@ -107,9 +105,7 @@ class RiskyCodeHunter:
         for result in results:
             if isinstance(result, Exception):
                 print(result)
-                results[results.index(result)] = False, None
-        await self.githubApi.closeSession()
-        return results
+        return list(filter(lambda x: not isinstance(x, Exception), results))
 
     async def __checkAndFillRepoContributorWrap(self, repo_scan: Repo) -> List[Contributor]:
         tasks = []
@@ -166,3 +162,6 @@ class RiskyCodeHunter:
                     )
                     trigRuleList.append(trigRule)
         return trigRuleList
+
+    async def close(self):
+        await self.githubApi.closeSession()

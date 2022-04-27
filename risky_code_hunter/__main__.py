@@ -100,6 +100,7 @@ async def main():
 
     print(f"--- {end_time - start_time} seconds ---")
 
+    await riskyCodeHunter.close()
     return
 
 
