@@ -39,7 +39,7 @@ class GithubApi:
             self.auth_token_check = True
             return True
 
-        # some other error occured
+        # some other error occurred
         # currently redundant part of the code
         self.auth_token_check = False
         return False
@@ -47,6 +47,7 @@ class GithubApi:
     async def checkAuthTokenRetries(self, retries_count: int) -> bool:
         count = 0
         while not self.auth_token_check and count < retries_count:
+            print("Checking Auth token!")
             await self.checkAuthToken()
             count += 1
             if not self.auth_token_check:
