@@ -127,6 +127,8 @@ class GithubApi:
             if resp.status == 404:
                 raise Exception(
                     "Error, 404 status!\n"
+                    "Maybe your github repository url is wrong!\n"
+                    f"Cannot find info on such url: {url}\n"
                     f"Status code: {resp.status}\n"
                     f"Response:\n{await resp.json()}"
                 )
