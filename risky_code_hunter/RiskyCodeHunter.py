@@ -83,17 +83,19 @@ class RiskyCodeHunter:
             return False, None
         if not repo_url:
             raise Exception("No repository URL has been provided!")
-        risky_repo_scan = Repo(
+        repo_scan = Repo(
             get_repo_author(repo_url),
             get_repo_name(repo_url),
             self.config
         )
-        self.repo_list.append(risky_repo_scan)
+        self.repo_list.append(repo_scan)
 
-        await risky_repo_scan.getContributorsList(self.githubApi)
-        await self.__checkAndFillRepoContributorWrap(risky_repo_scan)
-        risky_repo_scan.updateRiskyList()
-        return True, risky_repo_scan
+        print(f"Starting to scan '{repo_scan.repo_author}/{repo_scan.repo_name}' repository")
+        await repo_scan.getContributorsList(self.githubApi)
+        await self.__checkAndFillRepoContributorWrap(repo_scan)
+        repo_scan.updateRiskyList()
+        print(f"End of scanning '{repo_scan.repo_author}/{repo_scan.repo_name}' repository")
+        return True, repo_scan
 
     async def scanRepos(self, repo_url_list: Iterable[str]) -> List[Tuple[bool, Repo]]:
         if not await self.checkAuthToken():
@@ -113,7 +115,6 @@ class RiskyCodeHunter:
         for contributor in repo_scan.contributorsList:
             if contributor.url and isinstance(contributor.url, str):
                 user_contributors.append(contributor)
-
         for contributor in user_contributors:
             tasks.append(asyncio.ensure_future(self.__checkAndFillContributor(repo_scan, contributor)))
         contributors = list(await asyncio.gather(*tasks))

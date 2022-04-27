@@ -71,6 +71,8 @@ class GithubApi:
                 break
             contributors_json += response_json
             page_num += 1
+            if len(response_json) < per_page:
+                break
         return contributors_json
 
     # get contributors with stats (only top100)

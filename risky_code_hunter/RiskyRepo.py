@@ -150,7 +150,7 @@ class Repo:
 
     async def getContributorsList(self, myGithubApi: GithubApi) -> List[Contributor]:
         contributors_info = []
-        login_contributor = {}
+        contributors_per_login = {}
 
         # get list of all contributors:
         # anonymous contributors are currently turned off
@@ -159,18 +159,18 @@ class Repo:
             contributor_obj = Contributor(contributor)
             contributors_info.append(contributor_obj)
             if contributor['type'] != "Anonymous":
-                login_contributor[contributor_obj.login] = contributor_obj
+                contributors_per_login[contributor_obj.login] = contributor_obj
 
         # get contributors with stats (only top100)
         contributors_json = await myGithubApi.getRepoContributorsStats(self.repo_author, self.repo_name)
         for contributor in contributors_json:
-            if login_contributor.get(contributor['author']['login']):
-                contributor_obj = login_contributor.get(contributor['author']['login'])
+            if contributors_per_login.get(contributor['author']['login']):
+                contributor_obj = contributors_per_login.get(contributor['author']['login'])
                 contributor_obj.addValue(contributor['author'])
                 contributor_obj.commits = 0
             else:
                 contributor_obj = Contributor(contributor['author'])
-                login_contributor[contributor_obj.login] = contributor_obj
+                contributors_per_login[contributor_obj.login] = contributor_obj
                 contributors_info.append(contributor_obj)
             for week in contributor['weeks']:
                 contributor_obj.commits += week['c']
