@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Dict
 
-from .MyGithubApi import MyGithubApi
+from .MyGithubApi import GithubApi
 from .TriggeredRule import TriggeredRule
 
 
@@ -34,12 +34,6 @@ class Contributor:
     triggeredRules: List[TriggeredRule]
 
     def __init__(self, input_dict=None):
-        self.initialiseVariables()
-        if input_dict:
-            self.addValue(input_dict)
-        return
-
-    def initialiseVariables(self):
         self.login = str()
         self.url = str()
         self.commits = int()
@@ -55,7 +49,9 @@ class Contributor:
         self.bio = str()
         self.riskRating = float()
         self.triggeredRules = []
-
+        if input_dict:
+            self.addValue(input_dict)
+        return
 
     # Get some dict with values
     # If found interesting values
@@ -132,19 +128,18 @@ class Contributor:
 
         return
 
-    async def fillWithInfo(self, session, repo_author, repo_name, myGithubApi: MyGithubApi):
+    async def fillWithInfo(self, repo_author, repo_name, githubApi: GithubApi):
         if not isinstance(self.url, str) or not self.url:
             return self
-        await self.fillWithCommitsInfo(session, repo_author, repo_name, myGithubApi)
-        await self.fillWithProfileInfo(session, myGithubApi)
+        await self.fillWithCommitsInfo(repo_author, repo_name, githubApi)
+        await self.fillWithProfileInfo(githubApi)
         return self
 
-    async def fillWithCommitsInfo(self, session, repo_author, repo_name, myGithubApi: MyGithubApi):
+    async def fillWithCommitsInfo(self, repo_author, repo_name, githubApi: GithubApi):
         if not isinstance(self.url, str) or not self.url:
             return
 
-        commit_info = await myGithubApi.getRepoCommitByAuthor(
-            session,
+        commit_info = await githubApi.getRepoCommitByAuthor(
             repo_author,
             repo_name,
             self.login,
@@ -154,8 +149,7 @@ class Contributor:
             self.addValue(commit_info[0]['commit']['author'])
 
         if self.commits > 1:
-            commit_info = await myGithubApi.getRepoCommitByAuthor(
-                session,
+            commit_info = await githubApi.getRepoCommitByAuthor(
                 repo_author,
                 repo_name,
                 self.login,
@@ -165,9 +159,22 @@ class Contributor:
                 self.addValue(commit_info[0]['commit']['author'])
         return
 
-    async def fillWithProfileInfo(self, session, myGithubApi):
+    async def fillWithProfileInfo(self, githubApi):
         if not isinstance(self.url, str) or not self.url:
             return
-        contributor_info = await myGithubApi.getUserProfileInfo(session, self.url)
+        contributor_info = await githubApi.getUserProfileInfo(self.url)
         self.addValue(contributor_info)
         return
+
+    def getJSON(self) -> Dict:
+        result = self.__dict__.copy()
+
+        result['names'] = self.names.copy()
+        result['emails'] = self.emails.copy()
+
+        triggeredRules = []
+        for triggeredRule in self.triggeredRules:
+            triggeredRules.append(triggeredRule.getJSON())
+        result['triggeredRules'] = triggeredRules
+
+        return result
