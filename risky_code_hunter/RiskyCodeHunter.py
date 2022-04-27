@@ -78,7 +78,7 @@ class RiskyCodeHunter:
     async def checkAuthToken(self) -> bool:
         return await self.githubApi.checkAuthTokenRetries(self.githubApi.auth_token_max_retries)
 
-    async def scanRepo(self, repo_url) -> Tuple[bool, Repo | None]:
+    async def scanRepo(self, repo_url) -> Tuple[bool, Repo]:
         if not await self.checkAuthToken():
             return False, None
         if not repo_url:
