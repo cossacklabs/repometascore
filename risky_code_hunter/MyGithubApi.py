@@ -4,8 +4,6 @@ import random
 import aiohttp
 from typing import Dict, List
 
-from .AsyncLocker import AsyncLocker
-
 
 class GithubApi:
     auth_token: str
@@ -13,8 +11,8 @@ class GithubApi:
     auth_token_max_retries: int
     min_await: float
     max_await: float
-    __asyncLocker: AsyncLocker
-    __dictLoopSessions: Dict[asyncio.AbstractEventLoop, aiohttp.ClientSession]
+    __sessionLock: asyncio.Lock
+    __session: aiohttp.ClientSession | None
 
     def __init__(self, auth_token, auth_token_max_retries=5, min_await=5.0, max_await=15.0):
         self.auth_token = auth_token
@@ -22,27 +20,21 @@ class GithubApi:
         self.auth_token_max_retries = auth_token_max_retries
         self.min_await = min_await
         self.max_await = max_await
-        self.__asyncLocker = AsyncLocker()
-        self.__dictLoopSessions = {}
+        self.__session = None
+        self.__sessionLock = asyncio.Lock()
         return
 
-    async def __createSession(self, loop: asyncio.AbstractEventLoop) -> aiohttp.ClientSession:
-        await self.__asyncLocker.lockCurrentLoop()
-        session = self.__dictLoopSessions.get(loop)
-        if session and not session.closed:
-            await self.__asyncLocker.unlockCurrentLoop()
-            return session
-        session = aiohttp.ClientSession()
-        self.__dictLoopSessions[loop] = session
-        await self.__asyncLocker.unlockCurrentLoop()
-        return session
+    async def __createSession(self) -> aiohttp.ClientSession:
+        async with self.__sessionLock:
+            if not self.__session or self.__session.closed:
+                self.__session = aiohttp.ClientSession()
+        return self.__session
 
     async def __getSession(self) -> aiohttp.ClientSession:
-        loop = asyncio.events.get_event_loop()
-        session = self.__dictLoopSessions.get(loop)
+        session = self.__session
         if session and not session.closed:
             return session
-        session = await self.__createSession(loop)
+        session = await self.__createSession()
         return session
 
     async def checkAuthToken(self, session: aiohttp.ClientSession = None) -> bool:
@@ -205,19 +197,8 @@ class GithubApi:
                 min(0.8 * retry_num, self.max_await))
         )
 
-    async def closeAllSessions(self):
-        await self.__asyncLocker.turnOnAllLocks()
-        for loop, session in self.__dictLoopSessions.copy().items():
-            session: aiohttp.ClientSession
-            if loop.is_closed():
-                await session.close()
-                self.__dictLoopSessions.pop(loop)
-                continue
-            await session.close()
-        await self.__asyncLocker.turnOffAllLocks()
-
-    async def closeCurrSession(self):
-        loop = asyncio.events.get_event_loop()
-        session = self.__dictLoopSessions.get(loop)
-        if session:
-            await session.close()
+    async def closeSession(self):
+        async with self.__sessionLock:
+            if self.__session and not self.__session.closed:
+                await self.__session.close()
+        return

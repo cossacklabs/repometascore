@@ -9,7 +9,7 @@ from risky_code_hunter.RiskyCodeHunter import RiskyCodeHunter
 from risky_code_hunter.RiskyRepo import Repo
 
 
-def main():
+async def main():
     parser = argparse.ArgumentParser(
         description=
         'Processing GitHub repositories and showing risky contributors.\n'
@@ -60,7 +60,7 @@ def main():
     start_time = time.time()
     reposResultList = []
     if args.url:
-        reposResultList = asyncio.run(riskyCodeHunter.scanRepos(args.url))
+        reposResultList = await riskyCodeHunter.scanRepos(args.url)
     else:
         raise Exception("No URLs were provided!")
     end_time = time.time()
@@ -104,4 +104,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
