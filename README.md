@@ -5,17 +5,13 @@ Detect risky code in your dependency chain.
 ---
 
 ## Description
-Current package can be used to identify certain contributors 
-in a repository, thus scoring it as risky. All information about contributors is collected 
- through official GitHub API and solely based only on information that was provided by users to the platform. 
+Current package can be used to identify certain contributors in a repository, thus scoring it as risky. All information about contributors is collected through official GitHub API and solely based only on information that was provided by users to the platform.
 
-In the future, we might add more external data sources. 
+In the future, we might add more external data sources.
 
-Current RCH configuration is aimed at detecting reponsitories originating from Russia (or under significant control of Russian citizens) due to concerns about Russian-originating open-source products. Without making any statement about potential Russian malicious activity in open-source, this is what we use it for. 
+Current RCH configuration is aimed at detecting repositories originating from Russia (or under significant control of Russian citizens) due to concerns about Russian-originating open-source products. Without making any statement about potential Russian malicious activity in open-source, this is what we use it for.
 
-To begin working with this packages, firstly, you need to create
-and provide GitHub token. 
-[Here is description](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
+To begin working with this packages, firstly, you need to create and provide GitHub token. [Here is description](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 on how to create it. For your security we recommend creating 
 a separate token for our program without any security
 permissions. 
@@ -30,7 +26,7 @@ Variables, that are used in config file:
 | `risk_boundary_value`    | `float`      | Used in Repo. Sets boundary value, which helps us to define whether should we consider contributor as risky one or not. It compares `Contributor.riskRating` value with boundary value. |
 | `git_token`              | `str`        | Your GitHub token as string.                                                                                                                                                            |
 | `auth_token_max_retries` | `int`        | Optional. Default `5`. Shows how many times we should try to reconnect to users GitHub token.                                                                                           |
-| `github_min_await`       | `float`      | Opyional. Default `5.0`. Minimum await time (in seconds) while GitHubAPI responds with timeouts.                                                                                        |
+| `github_min_await`       | `float`      | Optional. Default `5.0`. Minimum await time (in seconds) while GitHubAPI responds with timeouts.                                                                                        |
 | `github_max_await`       | `float`      | Optional. Default `15.0`. Maximum await time (in seconds) while GitHubAPI responds with timeouts.                                                                                       |
 | `fields`                 | `List[Dict]` | List of fields with rules. More detailed about this variable in the next section.                                                                                                       |
 
@@ -46,7 +42,7 @@ Variables, that are used in config file:
 | `type`       | `str`       | String-name what can help user to understand what type of rule has been detected (e.g `Strong`, `Considerable`, `Weak`, etc.).                                                             |
 | `risk_value` | `float`     | This value accumulates to `Contributor.riskRating` variable. Also can be negative one for some extra cases.                                                                                |
 ---
-# Main Classses
+# Main Classes
 ###### All classes and methods that was not mentioned in this file - shouldn't be used by users. 
 ## RiskyCodeHunter class
 ### Variables
