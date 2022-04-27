@@ -38,7 +38,7 @@ async def main():
     if args.tokenfile:
         try:
             with open(args.tokenfile) as token_file:
-                git_token = token_file.readline()
+                git_token = token_file.readline().strip()
         except FileNotFoundError:
             raise Exception("Wrong token file has been provided!")
 
