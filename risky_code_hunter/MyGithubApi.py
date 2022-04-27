@@ -22,12 +22,9 @@ class GithubApi:
         self.__session = aiohttp.ClientSession()
         return
 
-    async def checkAuthToken(self, session: aiohttp.ClientSession = None) -> bool:
-        if not session:
-            session = self.__session
+    async def checkAuthToken(self) -> bool:
         resp = await self.getAsyncRequest(
             url='https://api.github.com',
-            session=session
         )
         # Currently, this piece of the code is redundant
         # As we successfully will get response only from
@@ -47,12 +44,10 @@ class GithubApi:
         self.auth_token_check = False
         return False
 
-    async def checkAuthTokenRetries(self, retries_count: int, session: aiohttp.ClientSession = None) -> bool:
-        if not session:
-            session = self.__session
+    async def checkAuthTokenRetries(self, retries_count: int) -> bool:
         count = 0
         while not self.auth_token_check and count < retries_count:
-            await self.checkAuthToken(session)
+            await self.checkAuthToken()
             count += 1
             if not self.auth_token_check:
                 print(f"Retry one more time! Try count: {count}")
@@ -62,9 +57,7 @@ class GithubApi:
     # get list of all contributors:
     # GitHub API expected data:
     # https://docs.github.com/en/rest/reference/repos#list-repository-contributors
-    async def getRepoContributors(self, repo_author, repo_name, anon=0, session: aiohttp.ClientSession = None) -> List:
-        if not session:
-            session = self.__session
+    async def getRepoContributors(self, repo_author, repo_name, anon=0) -> List:
         per_page = 100
         page_num = 1
         contributors_json = []
@@ -72,7 +65,6 @@ class GithubApi:
             response = await self.getAsyncRequest(
                 url=f"https://api.github.com/repos/{repo_author}/{repo_name}/contributors"
                     f"?anon={anon}&per_page={per_page}&page={page_num}",
-                session=session
             )
             response_json = await response.json()
             if len(response_json) == 0:
@@ -84,12 +76,9 @@ class GithubApi:
     # get contributors with stats (only top100)
     # expected data
     # https://docs.github.com/en/rest/reference/metrics#get-all-contributor-commit-activity
-    async def getRepoContributorsStats(self, repo_author, repo_name, session: aiohttp.ClientSession = None) -> List:
-        if not session:
-            session = self.__session
+    async def getRepoContributorsStats(self, repo_author, repo_name) -> List:
         contributors_resp = await self.getAsyncRequest(
             url=f"https://api.github.com/repos/{repo_author}/{repo_name}/stats/contributors",
-            session=session
         )
         contributors_json = await contributors_resp.json()
         return contributors_json
@@ -98,13 +87,10 @@ class GithubApi:
     # returns only one commit
     # expected data
     # https://docs.github.com/en/rest/reference/commits#list-commits
-    async def getRepoCommitByAuthor(self, repo_author, repo_name, author, commit_num, session: aiohttp.ClientSession = None) -> List:
-        if not session:
-            session = self.__session
+    async def getRepoCommitByAuthor(self, repo_author, repo_name, author, commit_num) -> List:
         commit_info_resp = await self.getAsyncRequest(
             url=f"https://api.github.com/repos/{repo_author}/{repo_name}/commits"
                 f"?author={author}&per_page=1&page={commit_num}",
-            session=session
         )
         commit_info = await commit_info_resp.json()
         return commit_info
@@ -112,21 +98,18 @@ class GithubApi:
     # get user profile information
     # expected data
     # https://docs.github.com/en/rest/reference/users#get-a-user
-    async def getUserProfileInfo(self, user_url, session: aiohttp.ClientSession = None) -> Dict:
-        if not session:
-            session = self.__session
+    async def getUserProfileInfo(self, user_url) -> Dict:
         profile_info_resp = await self.getAsyncRequest(
             url=user_url,
-            session=session
         )
         profile_info = await profile_info_resp.json()
         return profile_info
 
     # function-helper
     # to make async request
-    async def getAsyncRequest(self, url, session: aiohttp.ClientSession = None) -> aiohttp.ClientResponse:
-        if not session:
-            session = self.__session
+    async def getAsyncRequest(self, url) -> aiohttp.ClientResponse:
+        session = self.__session
+
         EXCEEDED_MSG = 'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.'
         retry = 0
         while True:
