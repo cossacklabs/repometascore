@@ -23,14 +23,14 @@ Configuration file must be with `*.json` extension. And contain
 only JSON dictionary.
 Variables, that are used in config file:
 ### Root
-| Variable                 | Type         | Description                                                                                                                                                                                  | 
-|--------------------------|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Variable                 | Type         | Description                                                                                                                                                                             | 
+|--------------------------|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `risk_boundary_value`    | `float`      | Used in Repo. Sets boundary value, which helps us to define whether should we consider contributor as risky one or not. It compares `Contributor.riskRating` value with boundary value. |
-| `git_token`              | `str`        | Your GitHub token as string.                                                                                                                                                                 |
-| `github_min_await`       | `float`      | Opyional. Default `5.0`. Minimum await time (in seconds) while GitHubAPI responds with timeouts.                                                                                             |
-| `github_max_await`       | `float`      | Optional. Default `15.0`. Maximum await time (in seconds) while GitHubAPI responds with timeouts.                                                                                            |
-| `auth_token_max_retries` | `int`        | Optional. Default `5`. Shows how many times we should try to reconnect to users GitHub token.                                                                                                |
-| `fields`                 | `List[Dict]` | List of fields with rules. More detailed about this variable in the next section.                                                                                                            |
+| `git_token`              | `str`        | Your GitHub token as string.                                                                                                                                                            |
+| `auth_token_max_retries` | `int`        | Optional. Default `5`. Shows how many times we should try to reconnect to users GitHub token.                                                                                           |
+| `fields`                 | `List[Dict]` | List of fields with rules. More detailed about this variable in the next section.                                                                                                       |
+| `github_min_await`       | `float`      | Opyional. Default `5.0`. Minimum await time (in seconds) while GitHubAPI responds with timeouts.                                                                                        |
+| `github_max_await`       | `float`      | Optional. Default `15.0`. Maximum await time (in seconds) while GitHubAPI responds with timeouts.                                                                                       |
 
 
 ### Fields
