@@ -1,3 +1,6 @@
+from typing import Dict
+
+
 class TriggeredRule:
     type: str
     fieldName: str
@@ -14,5 +17,8 @@ class TriggeredRule:
         self.riskValue = riskValue
         self.description = self.getPrint()
 
-    def getPrint(self):
+    def getPrint(self) -> str:
         return f"{self.type}. {self.fieldName.capitalize()}. Rule: '{self.trigger}'. Value: '{self.value}'"
+
+    def getJSON(self) -> Dict:
+        return self.__dict__.copy()

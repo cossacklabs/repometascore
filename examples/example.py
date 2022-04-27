@@ -1,29 +1,42 @@
 import asyncio
+import json
+
 from risky_code_hunter.RiskyCodeHunter import RiskyCodeHunter
-from risky_code_hunter.RiskyRepo import RiskyRepo
+from risky_code_hunter.RiskyRepo import Repo
 from risky_code_hunter.Contributor import Contributor
 from risky_code_hunter.TriggeredRule import TriggeredRule
 
 
 def main():
     repo_url = "https://github.com/yandex/yandex-tank"
+    repo_url_list = [
+        "https://github.com/JetBrains/kotlin",
+        "https://github.com/yandex/yandex-tank"
+    ]
     config_path = None
     git_token = "ghp_token"
-    riskyCodeHunter = RiskyCodeHunter(repo_url, config=config_path, git_token=git_token)
+    riskyCodeHunter = RiskyCodeHunter(config=config_path, git_token=git_token)
     riskyCodeHunter.checkAuthToken()
 
-    repoResult: RiskyRepo
-    is_success, repoResult = asyncio.run(riskyCodeHunter.scanRepo())
+    repoResult: Repo
+    is_success, repoResult = asyncio.run(riskyCodeHunter.scanRepo(repo_url))
     if is_success is True:
         repoResult.printFullReport()
     else:
         raise Exception("Some error occured while scanning repo. Sorry.")
 
+    scanResults = asyncio.run(riskyCodeHunter.scanRepos(repo_url_list))
+    risky_json = []
+    for is_success, repoResult in scanResults:
+        if is_success is True:
+            risky_json.append(repoResult.getRiskyJSON())
+    print(json.dumps(risky_json, indent=4))
+
     # All values in repoResult can be read, but not be written!
-    print("All values in classes RiskyRepo, Contributor and TriggeredRule can be read, but not be written!")
+    print("All values in classes Repo, Contributor and TriggeredRule can be read, but not be written!")
 
     print(
-        "RiskyRepo fields",
+        "Repo fields",
         f"Repo author: {repoResult.repo_author}",
         f"Repo name: {repoResult.repo_name}",
         f"Details about commits in repo",
@@ -116,6 +129,22 @@ def main():
                 f"Risk Value (risk rating of triggered rule): {triggeredRule.riskValue}",
                 f"Description (human-readable): {triggeredRule.description}"
             )
+
+    # You decided to change risk boundary value while running program
+
+    # set new boundary value
+    repoResult.risk_boundary_value = 2
+
+    # recalculate repoResult risky values and risky contributors
+    repoResult.updateRiskyList()
+
+    # Use it
+    # Process through all risky contributors
+    for contributor in repoResult.riskyContributorsList:
+        # Process through all their triggered rules
+        for triggeredRule in contributor.triggeredRules:
+            # same as usual contributors
+            continue
     return
 
 
