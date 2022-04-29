@@ -68,9 +68,14 @@ class GithubApi:
         page_num = 1
         contributors_json = []
         while True:
+            params = {
+                'anon': anon,
+                'per_page': per_page,
+                'page_num': page_num
+            }
             response = await self.getAsyncRequest(
-                url=f"https://api.github.com/repos/{repo_author}/{repo_name}/contributors"
-                    f"?anon={anon}&per_page={per_page}&page={page_num}",
+                url=f"https://api.github.com/repos/{repo_author}/{repo_name}/contributors",
+                params=params
             )
             response_json = await response.json()
             if len(response_json) == 0:
@@ -96,9 +101,14 @@ class GithubApi:
     # expected data
     # https://docs.github.com/en/rest/reference/commits#list-commits
     async def getRepoCommitByAuthor(self, repo_author, repo_name, author, commit_num) -> List:
+        params = {
+            'author': author,
+            'per_page': 1,
+            'page': commit_num
+        }
         commit_info_resp = await self.getAsyncRequest(
-            url=f"https://api.github.com/repos/{repo_author}/{repo_name}/commits"
-                f"?author={author}&per_page=1&page={commit_num}",
+            url=f"https://api.github.com/repos/{repo_author}/{repo_name}/commits",
+            params=params
         )
         commit_info = await commit_info_resp.json()
         return commit_info
