@@ -16,13 +16,13 @@ class Contributor:
     delta: int
 
     # detailed info from profile
-    location: str
+    location: List[str]
     emails: List[str]
     twitter_username: str
     names: List[str]
     company: str
     blog: str
-    bio: str
+    bio: List[str]
 
     # risk rating
     # 0 - clear
@@ -40,13 +40,13 @@ class Contributor:
         self.additions = int()
         self.deletions = int()
         self.delta = int()
-        self.location = str()
+        self.location = []
         self.emails = []
         self.twitter_username = str()
         self.names = []
         self.company = str()
         self.blog = str()
-        self.bio = str()
+        self.bio = []
         self.riskRating = float()
         self.triggeredRules = []
         if input_dict:
@@ -91,8 +91,8 @@ class Contributor:
             self.delta = delta
 
         location = input_dict.get('location', '')
-        if location and isinstance(location, str):
-            self.location = location
+        if location and isinstance(location, str) and location not in self.location:
+            self.location.append(location)
 
         email = input_dict.get('email', '')
         if email and isinstance(email, str) and email not in self.emails:
@@ -119,8 +119,8 @@ class Contributor:
             self.blog = blog
 
         bio = input_dict.get('bio', '')
-        if bio and isinstance(bio, str):
-            self.bio = bio
+        if bio and isinstance(bio, str) and bio not in self.bio:
+            self.bio.append(bio)
 
         riskRating = input_dict.get('riskRating', 0.0)
         if riskRating and isinstance(riskRating, float):
@@ -133,6 +133,7 @@ class Contributor:
             return self
         await self.fillWithCommitsInfo(repo_author, repo_name, githubApi)
         await self.fillWithProfileInfo(githubApi)
+        await self.fillWithTwitterInfo(githubApi)
         return self
 
     async def fillWithCommitsInfo(self, repo_author, repo_name, githubApi: GithubApi):
@@ -178,3 +179,16 @@ class Contributor:
         result['triggeredRules'] = triggeredRules
 
         return result
+
+    async def fillWithTwitterInfo(self, githubApi: GithubApi):
+        if not isinstance(self.twitter_username, str) or not self.twitter_username:
+            return
+        twitter_info = await githubApi.getTwitterAccountInfo(self.twitter_username)
+
+        add_dict = {}
+        add_dict['name'] = twitter_info['data']['user']['result']['legacy']['name']
+        add_dict['location'] = twitter_info['data']['user']['result']['legacy']['location']
+        add_dict['bio'] = twitter_info['data']['user']['result']['legacy']['description']
+        self.addValue(add_dict)
+
+        return
