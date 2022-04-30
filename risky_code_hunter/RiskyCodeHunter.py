@@ -2,7 +2,7 @@ import json
 import asyncio
 from typing import List, Dict, Tuple, Iterable
 
-from .MyGithubApi import GithubApi
+from .RequestManager import RequestManager
 from .RiskyRepo import Repo
 from .Contributor import Contributor
 from .TriggeredRule import TriggeredRule
@@ -47,21 +47,16 @@ def get_repo_author(repo_url):
 
 class RiskyCodeHunter:
     repo_list: List[Repo]
-    githubApi: GithubApi
+    requestManager: RequestManager
     config: Dict
 
     def __init__(self, config, git_token=None):
         self.__loadConfig(config)
         if git_token:
             self.config['git_token'] = git_token
-        auth_token = f"token {self.config['git_token']}"
-        self.githubApi = GithubApi(
-            auth_token,
-            self.config.get('auth_token_max_retries', 5),
-            self.config.get('github_min_await', 5.0),
-            self.config.get('github_max_await', 15.0)
-        )
+        self.requestManager = RequestManager(self.config)
         self.repo_list = []
+        return
 
     # load config via config file
     # if file not found or was not provided
@@ -76,7 +71,7 @@ class RiskyCodeHunter:
             raise Exception("Wrong config file has been provided!")
 
     async def checkAuthToken(self) -> bool:
-        return await self.githubApi.checkAuthTokenRetries(self.githubApi.auth_token_max_retries)
+        return await self.requestManager.githubApi.checkAuthTokenRetries()
 
     async def scanRepo(self, repo_url) -> Tuple[bool, Repo]:
         if not await self.checkAuthToken():
@@ -91,7 +86,7 @@ class RiskyCodeHunter:
         self.repo_list.append(repo_scan)
 
         print(f"Starting to scan '{repo_scan.repo_author}/{repo_scan.repo_name}' repository")
-        await repo_scan.getContributorsList(self.githubApi)
+        await repo_scan.getContributorsList(self.requestManager)
         await self.__checkAndFillRepoContributorWrap(repo_scan)
         repo_scan.updateRiskyList()
         print(f"End of scanning '{repo_scan.repo_author}/{repo_scan.repo_name}' repository")
@@ -103,7 +98,7 @@ class RiskyCodeHunter:
         tasks = []
         for repo_url in repo_url_list:
             tasks.append(asyncio.ensure_future(self.scanRepo(repo_url)))
-        results = list(await asyncio.gather(*tasks, return_exceptions=True))
+        results = list(await asyncio.gather(*tasks, return_exceptions=False))
         for result in results:
             if isinstance(result, Exception):
                 print(result)
@@ -121,11 +116,11 @@ class RiskyCodeHunter:
         return contributors
 
     async def __checkAndFillContributor(self, repo_scan: Repo, contributor: Contributor):
-        contributor = await contributor.fillWithInfo(repo_scan.repo_author, repo_scan.repo_name, self.githubApi)
+        contributor = await contributor.fillWithInfo(repo_scan.repo_author, repo_scan.repo_name, self.requestManager)
         contributor = await self.__checkContributor(contributor)
         if contributor.riskRating <= repo_scan.risk_boundary_value + 3:
-            ## TODO additional info from github repo
-            ## clone githubrepo and check commit timezones
+            # TODO additional info from github repo
+            # clone githubrepo and check commit timezones
             # self.checkTimezones(cloned_repo_path, contributor.emails)
             pass
         return contributor
@@ -139,7 +134,7 @@ class RiskyCodeHunter:
         contributor_field = contributor.__dict__.get(field['name'])
         trigRuleList = []
 
-        if contributor_field and isinstance(contributor_field, list):
+        if contributor_field and isinstance(contributor_field, set):
             for contributor_field_value in contributor_field:
                 trigRuleList += await self.__checkFieldRules(contributor_field_value.lower(), field)
         elif contributor_field:
@@ -165,4 +160,4 @@ class RiskyCodeHunter:
         return trigRuleList
 
     async def close(self):
-        await self.githubApi.closeSession()
+        await self.requestManager.closeSession()
