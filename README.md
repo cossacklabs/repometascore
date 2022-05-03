@@ -4,22 +4,73 @@ Detect risky code in your dependency chain.
 
 ---
 
-## Description
-The current package can be used to identify specific contributors in a repository, thus scoring it as risky. All information about contributors is collected through the official GitHub API and is solely based only on information users provided to the platform.
+## The main idea
 
-In the future, we might add more external data sources.
+This package helps to prevent supply chain risks by analyzing contributors in specific repositories. Nothing prevents open source project maintainers, especially from oppressed countries, from injecting malicious code and introducing backdoors.
 
-The current RCH configuration aims to detect repositories originating from Russia (or under significant control of Russian citizens) due to concerns about Russian-originating open-source products. Without making any statement about potential Russian malicious activity in open-source, this is what we use it for.
+Risky Code Hunter analyses the given repository collects information about its maintainers and contributors, and outputs the "risk rating". All info about contributors is collected through the official GitHub API, and other public sources, and is solely based on the information users provide in their accounts.
 
-To begin working with these packages, firstly, you need to create and provide a GitHub token. [Here is description](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
-on how to create it. We recommend creating 
-a separate token for our program without any security
-permissions for the sake of your security. 
+## How it works
+
+You install the package, provide a link to a repository-in-question and check the output. The output contains risk ratings and info about each contributor. You decide whether to use the repository in your product.
+
+The default configuration aims to detect repositories originating from Russia or being under the significant control of Russian citizens. Without making any statement about potential Russian malicious activity in open-source, this tool was built to mitigate the risks.
+
+## Installation
+
+Requirements: Debian, Ubuntu, Mac. Python 3.6+ installed.
+
+Install Risky Code Hunter via pip:
+
+```
+pip3 install git+https://github.com/cossacklabs/risky-code-hunter.git@main 
+```
+
+or alternatively like zip:
+```
+pip3 install https://github.com/cossacklabs/risky-code-hunter/archive/main.zip 
+```
+
+## Usage
+
+1. [Follow GitHub guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) to create new personal access token. We recommend creating a new, clean, token without any permissions.
+
+2. Copy created token into a separate file, call it `token_file.txt`.
+
+3. Run Risky Code Hunter with default config, point it to the repository-in-question and provide a path to your `token_file.txt`:
+
+```
+python3 -m risky_code_hunter --url https://github.com/yandex/yandex-tank --tokenfile token_file.txt
+```
+
+Enjoy the output and make decision whether to use this repository for your project.
+
+## Customisation
+
+You can create your own configuration with specific rules in it, and specific your GitHub security token in that configuration file.
+
+1. Copy the default configuration file [config.json](https://github.com/cossacklabs/risky-code-hunter/blob/main/examples/config.json).
+
+2. Update `git_token` value to have your GitHub token: `"git_token": "ghp_KvDv..."`
+
+3. Run Risky Code Hunter with your config:
+
+```
+python3 -m risky_code_hunter --url https://github.com/yandex/yandex-tank --config config.json
+```
+
+## Usage from python scripts
+
+It's possible to use Risky Code Hunter from your python scripts as part of your CICD checks. See the example in [examples/example.py](https://github.com/cossacklabs/risky-code-hunter/blob/main/examples/example.py).
+
+
 
 ## Configuration file
-Configuration file must be with `*.json` extension. And contain
-only JSON dictionary.
+
+Configuration file should be a valid json file that contains a json dictionary.
+
 Variables that are used in the config file:
+
 ### Root
 | Variable                 | Type         | Description                                                                                                                                                                             | 
 |--------------------------|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -43,14 +94,19 @@ Variables that are used in the config file:
 | `risk_value` | `float`     | This value accumulates to `Contributor.riskRating` variable. Also can be a negative one for some extra cases.                                                                                         |
 ---
 # Main Classes
-###### All classes and methods that was not mentioned in this file - shouldn't be used by users. 
+
+_Classes and methods that was not mentioned in this file are not intended to be used by users._
+
+
 ## RiskyCodeHunter class
+
 ### Variables
 | Variable    | Type         | Description                                                                                     | 
 |-------------|--------------|-------------------------------------------------------------------------------------------------|
 | `repo_list` | `List[Repo]` | List of all `Repo` class objects that were or processing right now in `RiskyCodeHunter` object. |
 | `githubApi` | `GithubApi`  | Object of `GithubApi` class, that was created in `RiskyCodeHunter` constructor.                 |
 | `config`    | `Dict`       | Configuration that was provided via `*.json` file. Stores as python `Dict` object.              |
+
 ### Methods
 | Method                                             | Return Type               | Description                                                                                                                                                                                                                                                         |
 |----------------------------------------------------|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -130,35 +186,8 @@ Variables that are used in the config file:
 | `getJSON()`  | `Dict`      | Returns `json` info about `TriggeredRule` object variables. Generated safely, so user can modify it without consequences. |
 
 ---
-# Installation
-
-To work with this package, you will need to have python3.6+ on your host system.
-Currently, this package can be installed via pip in several ways:
-- like this (currently not working due to a hidden nature of the repository):
-```
-pip3 install https://github.com/cossacklabs/risky-code-hunter/archive/main.zip 
-```
-- or like this:
-```
-pip3 install git+https://github.com/cossacklabs/risky-code-hunter.git@main 
-```
-
-# Usage
-To use our package in CLI mode, you will need to create a file 
-with GitHub token in it (to not leave your security
-token in cmd/terminal history).
-```
- python -m risky_code_hunter --url https://github.com/yandex/yandex-tank --tokenfile token_file
-```
-Or create your configuration
-with your very own rules in it (also, you can specify your 
-GitHub security token in that configuration file).
-```
-python -m risky_code_hunter --url https://github.com/yandex/yandex-tank --config config_file
-```
-
-Also, you can work with our program as a package. [Example is here](https://github.com/cossacklabs/risky-code-hunter/blob/main/examples/example.py).
 
 # License
-"Risky Code Hunter" is distributed under the terms of the Apache License (Version 2.0). See the license folder for details.
+"Risky Code Hunter" is distributed under the terms of the Apache License (Version 2.0).
 
+This software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
