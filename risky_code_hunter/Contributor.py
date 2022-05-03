@@ -2,7 +2,7 @@ from typing import List, Dict, Set
 
 from .TwitterAPI import TwitterAPI
 from .RequestManager import RequestManager
-from .MyGithubApi import GithubApi
+from .MyGithubApi import GithubAPI
 from .TriggeredRule import TriggeredRule
 
 
@@ -59,9 +59,9 @@ class Contributor:
     # If found interesting values
     # We would add them and rewrite
     # Old object values
-    def addValue(self, input_dict: dict):
+    def addValue(self, input_dict: Dict):
         # Check whether we have dict as input
-        if not isinstance(input_dict, dict):
+        if not isinstance(input_dict, Dict):
             return
 
         login = input_dict.get('login', '')
@@ -133,16 +133,16 @@ class Contributor:
     async def fillWithInfo(self, repo_author, repo_name, requestManager: RequestManager):
         if not isinstance(self.url, str) or not self.url:
             return self
-        await self.fillWithCommitsInfo(repo_author, repo_name, requestManager.githubApi)
-        await self.fillWithProfileInfo(requestManager.githubApi)
+        await self.fillWithCommitsInfo(repo_author, repo_name, requestManager.githubAPI)
+        await self.fillWithProfileInfo(requestManager.githubAPI)
         await self.fillWithTwitterInfo(requestManager.twitterAPI)
         return self
 
-    async def fillWithCommitsInfo(self, repo_author, repo_name, githubApi: GithubApi):
+    async def fillWithCommitsInfo(self, repo_author, repo_name, githubAPI: GithubAPI):
         if not isinstance(self.url, str) or not self.url:
             return
 
-        commit_info = await githubApi.getRepoCommitByAuthor(
+        commit_info = await githubAPI.getRepoCommitByAuthor(
             repo_author,
             repo_name,
             self.login,
@@ -152,7 +152,7 @@ class Contributor:
             self.addValue(commit_info[0]['commit']['author'])
 
         if self.commits > 1:
-            commit_info = await githubApi.getRepoCommitByAuthor(
+            commit_info = await githubAPI.getRepoCommitByAuthor(
                 repo_author,
                 repo_name,
                 self.login,
@@ -162,10 +162,10 @@ class Contributor:
                 self.addValue(commit_info[0]['commit']['author'])
         return
 
-    async def fillWithProfileInfo(self, githubApi):
+    async def fillWithProfileInfo(self, githubAPI):
         if not isinstance(self.url, str) or not self.url:
             return
-        contributor_info = await githubApi.getUserProfileInfo(self.url)
+        contributor_info = await githubAPI.getUserProfileInfo(self.url)
         self.addValue(contributor_info)
         return
 
@@ -188,11 +188,17 @@ class Contributor:
         if not isinstance(self.twitter_username, str) or not self.twitter_username:
             return
         twitter_info = await twitterAPI.getTwitterAccountInfo(self.twitter_username)
-        add_dict = {
-            'name': twitter_info['data']['user']['result']['legacy']['name'],
-            'location': twitter_info['data']['user']['result']['legacy']['location'],
-            'bio': twitter_info['data']['user']['result']['legacy']['description']
-        }
+        try:
+            add_dict = {
+                'name': twitter_info['data']['user']['result']['legacy']['name'],
+                'location': twitter_info['data']['user']['result']['legacy']['location'],
+                'bio': twitter_info['data']['user']['result']['legacy']['description']
+            }
+        except KeyError as e:
+            # Current twitter account does not exists
+            # Example: https://twitter.com/1anisim
+            # Response example:
+            # { "data" : {} }
+            return
         self.addValue(add_dict)
-
         return

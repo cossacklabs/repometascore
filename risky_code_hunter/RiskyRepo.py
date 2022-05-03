@@ -154,7 +154,7 @@ class Repo:
 
         # get list of all contributors:
         # anonymous contributors are currently turned off
-        contributors_json = await requestManager.githubApi.getRepoContributors(self.repo_author, self.repo_name)
+        contributors_json = await requestManager.githubAPI.getRepoContributors(self.repo_author, self.repo_name)
         for contributor in contributors_json:
             contributor_obj = Contributor(contributor)
             contributors_info.append(contributor_obj)
@@ -162,7 +162,7 @@ class Repo:
                 contributors_per_login[contributor_obj.login] = contributor_obj
 
         # get contributors with stats (only top100)
-        contributors_json = await requestManager.githubApi.getRepoContributorsStats(self.repo_author, self.repo_name)
+        contributors_json = await requestManager.githubAPI.getRepoContributorsStats(self.repo_author, self.repo_name)
         for contributor in contributors_json:
             if contributors_per_login.get(contributor['author']['login']):
                 contributor_obj = contributors_per_login.get(contributor['author']['login'])
