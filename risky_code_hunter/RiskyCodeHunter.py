@@ -71,7 +71,7 @@ class RiskyCodeHunter:
             raise Exception("Wrong config file has been provided!")
 
     async def checkAuthToken(self) -> bool:
-        return await self.requestManager.githubApi.checkAuthTokenRetries()
+        return await self.requestManager.githubAPI.checkAuthTokenRetries()
 
     async def scanRepo(self, repo_url) -> Tuple[bool, Repo]:
         if not await self.checkAuthToken():
@@ -93,8 +93,11 @@ class RiskyCodeHunter:
         return True, repo_scan
 
     async def scanRepos(self, repo_url_list: Iterable[str]) -> List[Tuple[bool, Repo]]:
+        await self.requestManager.initializeTokens()
+
         if not await self.checkAuthToken():
             return []
+
         tasks = []
         for repo_url in repo_url_list:
             tasks.append(asyncio.ensure_future(self.scanRepo(repo_url)))
@@ -133,8 +136,7 @@ class RiskyCodeHunter:
     async def __checkContributorField(self, contributor, field):
         contributor_field = contributor.__dict__.get(field['name'])
         trigRuleList = []
-
-        if contributor_field and isinstance(contributor_field, set):
+        if isinstance(contributor_field, set):
             for contributor_field_value in contributor_field:
                 trigRuleList += await self.__checkFieldRules(contributor_field_value.lower(), field)
         elif contributor_field:
