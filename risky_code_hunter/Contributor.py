@@ -1,5 +1,7 @@
+import asyncio
 from typing import List, Dict, Set
 
+from .DomainInfo import DomainInfo
 from .TwitterAPI import TwitterAPI
 from .RequestManager import RequestManager
 from .MyGithubApi import GithubAPI
@@ -131,39 +133,50 @@ class Contributor:
         return
 
     async def fillWithInfo(self, repo_author, repo_name, requestManager: RequestManager):
-        if not (isinstance(self.url, str) or self.url):
+        if not (isinstance(self.url, str) and self.url):
             return self
-        await self.fillWithCommitsInfo(repo_author, repo_name, requestManager.githubAPI)
+
         await self.fillWithProfileInfo(requestManager.githubAPI)
-        await self.fillWithTwitterInfo(requestManager.twitterAPI)
+        tasks = [
+            asyncio.ensure_future(self.fillWithCommitsInfo(repo_author, repo_name, requestManager.githubAPI)),
+            asyncio.ensure_future(self.fillWithTwitterInfo(requestManager.twitterAPI)),
+            asyncio.ensure_future(self.fillWithBlogURLInfo(requestManager.domainInfo))
+        ]
+        await asyncio.gather(*tasks)
         return self
 
     async def fillWithCommitsInfo(self, repo_author, repo_name, githubAPI: GithubAPI):
-        if not (isinstance(self.url, str) or self.url):
+        if not (isinstance(self.url, str) and self.url):
             return
 
-        commit_info = await githubAPI.getRepoCommitByAuthor(
+        page: int = 1
+        per_page: int = 100
+        commits_info = await githubAPI.getRepoCommitByAuthor(
             repo_author,
             repo_name,
             self.login,
-            1
+            page,
+            per_page
         )
-        if len(commit_info) > 0:
-            self.addValue(commit_info[0]['commit']['author'])
+        for commit_info in commits_info:
+            self.addValue(commit_info['commit']['author'])
 
-        if self.commits > 1:
-            commit_info = await githubAPI.getRepoCommitByAuthor(
+        # we are doing double-check here, because GitHub can store correct counter for commits
+        # but can't store info about all commits
+        if len(commits_info) == per_page and self.commits > per_page:
+            commits_info = await githubAPI.getRepoCommitByAuthor(
                 repo_author,
                 repo_name,
                 self.login,
-                self.commits
+                (self.commits // per_page) + 1,
+                per_page
             )
-            if len(commit_info) > 0:
-                self.addValue(commit_info[0]['commit']['author'])
+            for commit_info in commits_info:
+                self.addValue(commit_info['commit']['author'])
         return
 
     async def fillWithProfileInfo(self, githubAPI):
-        if not (isinstance(self.url, str) or self.url):
+        if not (isinstance(self.url, str) and self.url):
             return
         contributor_info = await githubAPI.getUserProfileInfo(self.url)
         self.addValue(contributor_info)
@@ -185,7 +198,7 @@ class Contributor:
         return result
 
     async def fillWithTwitterInfo(self, twitterAPI: TwitterAPI):
-        if not (isinstance(self.twitter_username, str) or self.twitter_username):
+        if not (isinstance(self.twitter_username, str) and self.twitter_username):
             return
         twitter_info = await twitterAPI.getTwitterAccountInfo(self.twitter_username)
         try:
@@ -202,3 +215,9 @@ class Contributor:
             return
         self.addValue(add_dict)
         return
+
+    async def fillWithBlogURLInfo(self, domainInfo: DomainInfo):
+        if not (isinstance(self.blog, str) and self.blog):
+            return
+        blogURLLocationInfo = await domainInfo.getDomainInfo(self.blog)
+        self.location.update(blogURLLocationInfo['location'])
