@@ -36,7 +36,7 @@ class Repo:
     risk_boundary_value: float
 
     # Provide
-    def __init__(self, repo_author, repo_name, config: dict = None):
+    def __init__(self, repo_author, repo_name, config: Dict = None):
         self.repo_author = repo_author
         self.repo_name = repo_name
         self.commits = int()
