@@ -131,7 +131,7 @@ class Contributor:
         return
 
     async def fillWithInfo(self, repo_author, repo_name, requestManager: RequestManager):
-        if not isinstance(self.url, str) or not self.url:
+        if not (isinstance(self.url, str) or self.url):
             return self
         await self.fillWithCommitsInfo(repo_author, repo_name, requestManager.githubAPI)
         await self.fillWithProfileInfo(requestManager.githubAPI)
@@ -139,7 +139,7 @@ class Contributor:
         return self
 
     async def fillWithCommitsInfo(self, repo_author, repo_name, githubAPI: GithubAPI):
-        if not isinstance(self.url, str) or not self.url:
+        if not (isinstance(self.url, str) or self.url):
             return
 
         commit_info = await githubAPI.getRepoCommitByAuthor(
@@ -163,7 +163,7 @@ class Contributor:
         return
 
     async def fillWithProfileInfo(self, githubAPI):
-        if not isinstance(self.url, str) or not self.url:
+        if not (isinstance(self.url, str) or self.url):
             return
         contributor_info = await githubAPI.getUserProfileInfo(self.url)
         self.addValue(contributor_info)
@@ -185,7 +185,7 @@ class Contributor:
         return result
 
     async def fillWithTwitterInfo(self, twitterAPI: TwitterAPI):
-        if not isinstance(self.twitter_username, str) or not self.twitter_username:
+        if not (isinstance(self.twitter_username, str) or self.twitter_username):
             return
         twitter_info = await twitterAPI.getTwitterAccountInfo(self.twitter_username)
         try:
