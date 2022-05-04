@@ -1,7 +1,7 @@
 import json
 from typing import List, Dict
 
-from .MyGithubApi import GithubApi
+from .RequestManager import RequestManager
 from .Contributor import Contributor
 
 
@@ -36,7 +36,7 @@ class Repo:
     risk_boundary_value: float
 
     # Provide
-    def __init__(self, repo_author, repo_name, config: dict = None):
+    def __init__(self, repo_author, repo_name, config: Dict = None):
         self.repo_author = repo_author
         self.repo_name = repo_name
         self.commits = int()
@@ -148,13 +148,13 @@ class Repo:
             result.append(json.dumps(riskyDict, indent=4))
         return "\n".join(result)
 
-    async def getContributorsList(self, myGithubApi: GithubApi) -> List[Contributor]:
+    async def getContributorsList(self, requestManager: RequestManager) -> List[Contributor]:
         contributors_info = []
         contributors_per_login = {}
 
         # get list of all contributors:
         # anonymous contributors are currently turned off
-        contributors_json = await myGithubApi.getRepoContributors(self.repo_author, self.repo_name)
+        contributors_json = await requestManager.githubAPI.getRepoContributors(self.repo_author, self.repo_name)
         for contributor in contributors_json:
             contributor_obj = Contributor(contributor)
             contributors_info.append(contributor_obj)
@@ -162,7 +162,7 @@ class Repo:
                 contributors_per_login[contributor_obj.login] = contributor_obj
 
         # get contributors with stats (only top100)
-        contributors_json = await myGithubApi.getRepoContributorsStats(self.repo_author, self.repo_name)
+        contributors_json = await requestManager.githubAPI.getRepoContributorsStats(self.repo_author, self.repo_name)
         for contributor in contributors_json:
             if contributors_per_login.get(contributor['author']['login']):
                 contributor_obj = contributors_per_login.get(contributor['author']['login'])
