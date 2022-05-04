@@ -12,7 +12,7 @@ class AbstractAPI(ABC):
     max_await: float
     __session: aiohttp.ClientSession
     _response_handlers: Dict
-    UNPREDICTED_RESPONSE_HANDLER = -1
+    UNPREDICTED_RESPONSE_HANDLER_INDEX = -1
 
     def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None):
         if config is None:
@@ -26,7 +26,7 @@ class AbstractAPI(ABC):
         self.max_await = config.get('request_max_await', 15.0)
         self._response_handlers = self.createResponseHandlers()
         self.handleUnpredictedResponse = self._response_handlers.pop(
-            self.UNPREDICTED_RESPONSE_HANDLER, self.handleUnpredictedResponse
+            self.UNPREDICTED_RESPONSE_HANDLER_INDEX, self.handleUnpredictedResponse
         )
 
     @abstractmethod
