@@ -22,7 +22,7 @@ class GithubAPI(AbstractAPI):
 
     def createResponseHandlers(self) -> Dict:
         result = {
-            -1: self.handleNonPredictedResponse,
+            self.UNPREDICTED_RESPONSE_HANDLER: self.handleUnpredictedResponse,
             200: self.handleResponse200,
             401: self.handleResponse401,
             403: self.handleResponse403,
@@ -44,7 +44,7 @@ class GithubAPI(AbstractAPI):
         resp_json = await resp.json()
         if isinstance(resp_json, dict) and resp_json.get('message', str()) == self.EXCEEDED_MSG:
             return True
-        await self.handleNonPredictedResponse(resp=resp, **kwargs)
+        await self.handleUnpredictedResponse(resp=resp, **kwargs)
         return False
 
     async def handleResponse404(self, url, resp, **kwargs):

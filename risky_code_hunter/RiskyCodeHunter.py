@@ -99,7 +99,7 @@ class RiskyCodeHunter:
         tasks = []
         for repo_url in repo_url_list:
             tasks.append(asyncio.ensure_future(self.scanRepo(repo_url)))
-        results = list(await asyncio.gather(*tasks, return_exceptions=False))
+        results = list(await asyncio.gather(*tasks, return_exceptions=True))
         for result in results:
             if isinstance(result, Exception):
                 print(result)
