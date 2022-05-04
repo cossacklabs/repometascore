@@ -1,9 +1,9 @@
 {
   "risk_boundary_value": 0.5,
   "git_token": "ghp_token",
-  "auth_token_max_retries": 5,
-  "github_min_await": 10.0,
-  "github_max_await": 30.0,
+  "request_max_retries": 5,
+  "request_min_await": 10.0,
+  "request_max_await": 30.0,
   "fields": [
     {
       "name": "location",

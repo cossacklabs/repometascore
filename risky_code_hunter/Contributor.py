@@ -1,6 +1,8 @@
-from typing import List, Dict
+from typing import List, Dict, Set
 
-from .MyGithubApi import GithubApi
+from .TwitterAPI import TwitterAPI
+from .RequestManager import RequestManager
+from .MyGithubApi import GithubAPI
 from .TriggeredRule import TriggeredRule
 
 
@@ -16,13 +18,13 @@ class Contributor:
     delta: int
 
     # detailed info from profile
-    location: str
-    emails: List[str]
+    location: Set[str]
+    emails: Set[str]
     twitter_username: str
-    names: List[str]
+    names: Set[str]
     company: str
     blog: str
-    bio: str
+    bio: Set[str]
 
     # risk rating
     # 0 - clear
@@ -40,13 +42,13 @@ class Contributor:
         self.additions = int()
         self.deletions = int()
         self.delta = int()
-        self.location = str()
-        self.emails = []
+        self.location = set()
+        self.emails = set()
         self.twitter_username = str()
-        self.names = []
+        self.names = set()
         self.company = str()
         self.blog = str()
-        self.bio = str()
+        self.bio = set()
         self.riskRating = float()
         self.triggeredRules = []
         if input_dict:
@@ -57,89 +59,90 @@ class Contributor:
     # If found interesting values
     # We would add them and rewrite
     # Old object values
-    def addValue(self, input_dict: dict):
+    def addValue(self, input_dict: Dict):
         # Check whether we have dict as input
-        if not isinstance(input_dict, dict):
+        if not isinstance(input_dict, Dict):
             return
 
-        login = input_dict.get('login', '')
-        if login and isinstance(login, str):
+        login = input_dict.get('login')
+        if isinstance(login, str):
             self.login = login
 
-        url = input_dict.get('url', '')
-        if url and isinstance(url, str):
+        url = input_dict.get('url')
+        if isinstance(url, str):
             self.url = url
 
-        commits = input_dict.get('commits', 0)
-        if commits and isinstance(commits, int):
+        commits = input_dict.get('commits')
+        if isinstance(commits, int):
             self.commits = commits
 
-        commits = input_dict.get('contributions', 0)
-        if commits and isinstance(commits, int):
+        commits = input_dict.get('contributions')
+        if isinstance(commits, int):
             self.commits = commits
 
-        additions = input_dict.get('additions', 0)
-        if additions and isinstance(additions, int):
+        additions = input_dict.get('additions')
+        if isinstance(additions, int):
             self.additions = additions
 
-        deletions = input_dict.get('deletions', 0)
-        if deletions and isinstance(deletions, int):
+        deletions = input_dict.get('deletions')
+        if isinstance(deletions, int):
             self.deletions = deletions
 
-        delta = input_dict.get('delta', 0)
-        if delta and isinstance(delta, int):
+        delta = input_dict.get('delta')
+        if isinstance(delta, int):
             self.delta = delta
 
-        location = input_dict.get('location', '')
-        if location and isinstance(location, str):
-            self.location = location
+        location = input_dict.get('location')
+        if isinstance(location, str):
+            self.location.add(location)
 
-        email = input_dict.get('email', '')
-        if email and isinstance(email, str) and email not in self.emails:
-            self.emails.append(email)
+        email = input_dict.get('email')
+        if isinstance(email, str):
+            self.emails.add(email)
 
-        twitter_username = input_dict.get('twitter', '')
-        if twitter_username and isinstance(twitter_username, str):
+        twitter_username = input_dict.get('twitter')
+        if isinstance(twitter_username, str):
             self.twitter_username = twitter_username
 
-        twitter_username = input_dict.get('twitter_username', '')
-        if twitter_username and isinstance(twitter_username, str):
+        twitter_username = input_dict.get('twitter_username')
+        if isinstance(twitter_username, str):
             self.twitter_username = twitter_username
 
-        name = input_dict.get('name', '')
-        if name and isinstance(name, str) and name not in self.names:
-            self.names.append(name)
+        name = input_dict.get('name')
+        if isinstance(name, str):
+            self.names.add(name)
 
-        company = input_dict.get('company', '')
-        if company and isinstance(company, str):
+        company = input_dict.get('company')
+        if isinstance(company, str):
             self.company = company
 
-        blog = input_dict.get('blog', '')
-        if blog and isinstance(blog, str):
+        blog = input_dict.get('blog')
+        if isinstance(blog, str):
             self.blog = blog
 
-        bio = input_dict.get('bio', '')
-        if bio and isinstance(bio, str):
-            self.bio = bio
+        bio = input_dict.get('bio')
+        if isinstance(bio, str):
+            self.bio.add(bio)
 
-        riskRating = input_dict.get('riskRating', 0.0)
-        if riskRating and isinstance(riskRating, float):
+        riskRating = input_dict.get('riskRating')
+        if isinstance(riskRating, float):
             self.riskRating = riskRating
 
         return
 
-    async def fillWithInfo(self, repo_author, repo_name, githubApi: GithubApi):
-        if not isinstance(self.url, str) or not self.url:
+    async def fillWithInfo(self, repo_author, repo_name, requestManager: RequestManager):
+        if not (isinstance(self.url, str) or self.url):
             return self
-        await self.fillWithCommitsInfo(repo_author, repo_name, githubApi)
-        await self.fillWithProfileInfo(githubApi)
+        await self.fillWithCommitsInfo(repo_author, repo_name, requestManager.githubAPI)
+        await self.fillWithProfileInfo(requestManager.githubAPI)
+        await self.fillWithTwitterInfo(requestManager.twitterAPI)
         return self
 
-    async def fillWithCommitsInfo(self, repo_author, repo_name, githubApi: GithubApi):
-        if not isinstance(self.url, str) or not self.url:
+    async def fillWithCommitsInfo(self, repo_author, repo_name, githubAPI: GithubAPI):
+        if not (isinstance(self.url, str) or self.url):
             return
 
-        commit_info = await githubApi.getRepoCommitByAuthor(
+        commit_info = await githubAPI.getRepoCommitByAuthor(
             repo_author,
             repo_name,
             self.login,
@@ -149,7 +152,7 @@ class Contributor:
             self.addValue(commit_info[0]['commit']['author'])
 
         if self.commits > 1:
-            commit_info = await githubApi.getRepoCommitByAuthor(
+            commit_info = await githubAPI.getRepoCommitByAuthor(
                 repo_author,
                 repo_name,
                 self.login,
@@ -159,18 +162,20 @@ class Contributor:
                 self.addValue(commit_info[0]['commit']['author'])
         return
 
-    async def fillWithProfileInfo(self, githubApi):
-        if not isinstance(self.url, str) or not self.url:
+    async def fillWithProfileInfo(self, githubAPI):
+        if not (isinstance(self.url, str) or self.url):
             return
-        contributor_info = await githubApi.getUserProfileInfo(self.url)
+        contributor_info = await githubAPI.getUserProfileInfo(self.url)
         self.addValue(contributor_info)
         return
 
     def getJSON(self) -> Dict:
         result = self.__dict__.copy()
 
-        result['names'] = self.names.copy()
-        result['emails'] = self.emails.copy()
+        result['names'] = list(self.names)
+        result['emails'] = list(self.emails)
+        result['location'] = list(self.location)
+        result['bio'] = list(self.bio)
 
         triggeredRules = []
         for triggeredRule in self.triggeredRules:
@@ -178,3 +183,22 @@ class Contributor:
         result['triggeredRules'] = triggeredRules
 
         return result
+
+    async def fillWithTwitterInfo(self, twitterAPI: TwitterAPI):
+        if not (isinstance(self.twitter_username, str) or self.twitter_username):
+            return
+        twitter_info = await twitterAPI.getTwitterAccountInfo(self.twitter_username)
+        try:
+            add_dict = {
+                'name': twitter_info['data']['user']['result']['legacy']['name'],
+                'location': twitter_info['data']['user']['result']['legacy']['location'],
+                'bio': twitter_info['data']['user']['result']['legacy']['description']
+            }
+        except KeyError as e:
+            # Current twitter account does not exists
+            # Example: https://twitter.com/1anisim
+            # Response example:
+            # { "data" : {} }
+            return
+        self.addValue(add_dict)
+        return
