@@ -64,68 +64,68 @@ class Contributor:
         if not isinstance(input_dict, Dict):
             return
 
-        login = input_dict.get('login', '')
-        if login and isinstance(login, str):
+        login = input_dict.get('login')
+        if isinstance(login, str):
             self.login = login
 
-        url = input_dict.get('url', '')
-        if url and isinstance(url, str):
+        url = input_dict.get('url')
+        if isinstance(url, str):
             self.url = url
 
-        commits = input_dict.get('commits', 0)
-        if commits and isinstance(commits, int):
+        commits = input_dict.get('commits')
+        if isinstance(commits, int):
             self.commits = commits
 
-        commits = input_dict.get('contributions', 0)
-        if commits and isinstance(commits, int):
+        commits = input_dict.get('contributions')
+        if isinstance(commits, int):
             self.commits = commits
 
-        additions = input_dict.get('additions', 0)
-        if additions and isinstance(additions, int):
+        additions = input_dict.get('additions')
+        if isinstance(additions, int):
             self.additions = additions
 
-        deletions = input_dict.get('deletions', 0)
-        if deletions and isinstance(deletions, int):
+        deletions = input_dict.get('deletions')
+        if isinstance(deletions, int):
             self.deletions = deletions
 
-        delta = input_dict.get('delta', 0)
-        if delta and isinstance(delta, int):
+        delta = input_dict.get('delta')
+        if isinstance(delta, int):
             self.delta = delta
 
-        location = input_dict.get('location', '')
-        if location and isinstance(location, str):
+        location = input_dict.get('location')
+        if isinstance(location, str):
             self.location.add(location)
 
-        email = input_dict.get('email', '')
-        if email and isinstance(email, str):
+        email = input_dict.get('email')
+        if isinstance(email, str):
             self.emails.add(email)
 
-        twitter_username = input_dict.get('twitter', '')
-        if twitter_username and isinstance(twitter_username, str):
+        twitter_username = input_dict.get('twitter')
+        if isinstance(twitter_username, str):
             self.twitter_username = twitter_username
 
-        twitter_username = input_dict.get('twitter_username', '')
-        if twitter_username and isinstance(twitter_username, str):
+        twitter_username = input_dict.get('twitter_username')
+        if isinstance(twitter_username, str):
             self.twitter_username = twitter_username
 
-        name = input_dict.get('name', '')
-        if name and isinstance(name, str):
+        name = input_dict.get('name')
+        if isinstance(name, str):
             self.names.add(name)
 
-        company = input_dict.get('company', '')
-        if company and isinstance(company, str):
+        company = input_dict.get('company')
+        if isinstance(company, str):
             self.company = company
 
-        blog = input_dict.get('blog', '')
-        if blog and isinstance(blog, str):
+        blog = input_dict.get('blog')
+        if isinstance(blog, str):
             self.blog = blog
 
-        bio = input_dict.get('bio', '')
-        if bio and isinstance(bio, str):
+        bio = input_dict.get('bio')
+        if isinstance(bio, str):
             self.bio.add(bio)
 
-        riskRating = input_dict.get('riskRating', 0.0)
-        if riskRating and isinstance(riskRating, float):
+        riskRating = input_dict.get('riskRating')
+        if isinstance(riskRating, float):
             self.riskRating = riskRating
 
         return

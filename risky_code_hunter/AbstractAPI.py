@@ -12,7 +12,6 @@ class AbstractAPI(ABC):
     max_await: float
     __session: aiohttp.ClientSession
     _response_handlers: Dict
-    NON_PREDICTED_RESPONSE_HANDLER = None
 
     def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None):
         if config is None:
@@ -24,18 +23,16 @@ class AbstractAPI(ABC):
         self.max_retries = config.get('request_max_retries', 5)
         self.min_await = config.get('request_min_await', 5.0)
         self.max_await = config.get('request_max_await', 15.0)
-        self._response_handlers = {}
-        self.initializeResponseHandlers()
+        self._response_handlers = self.createResponseHandlers()
+        self.handleNonPredictedResponse = self._response_handlers.pop(-1, self.handleNonPredictedResponse)
 
     @abstractmethod
-    def initializeResponseHandlers(self):
-        self.NON_PREDICTED_RESPONSE_HANDLER = self.handleNonPredictedResponse
-        self._response_handlers[200] = self.handleResponse200
-        return
+    def createResponseHandlers(self) -> Dict:
+        raise NotImplementedError("You should implement this!")
 
     @abstractmethod
     async def initializeTokens(self) -> bool:
-        pass
+        raise NotImplementedError("You should implement this!")
 
     async def handleNonPredictedResponse(self, url, params, resp, **kwargs) -> bool:
         raise Exception(
@@ -63,7 +60,7 @@ class AbstractAPI(ABC):
                 resp_data = await resp.read()
                 response_handler = self._response_handlers.get(
                     resp.status,
-                    self.NON_PREDICTED_RESPONSE_HANDLER
+                    self.handleNonPredictedResponse
                 )
                 need_retry = await response_handler(
                     retry=retry,
