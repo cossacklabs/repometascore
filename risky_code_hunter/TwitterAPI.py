@@ -13,47 +13,44 @@ class TwitterAPI(AbstractAPI):
         super().__init__(session=session, config=config)
         self.twitter_guest_token = str()
 
-    def initializeRequestMap(self):
-        self._mappedResponseStatuses[-1] = self.nonPredictedResponse
-        self._mappedResponseStatuses[200] = self.response200
-        self._mappedResponseStatuses[401] = self.response401
-        self._mappedResponseStatuses[404] = self.response404
+    def initializeResponseHandlers(self):
+        self.NON_PREDICTED_RESPONSE_HANDLER = self.handleNonPredictedResponse
+        self._response_handlers[200] = self.handleResponse200
+        self._response_handlers[401] = self.handleResponse401
+        self._response_handlers[404] = self.handleResponse404
         return
 
-    async def initializeTokens(self) -> None:
-        print("Getting Twitter Guest Token")
+    async def initializeTokens(self) -> bool:
+        if self.twitter_guest_token:
+            return True
+        print("Getting twitter guest token")
         self.twitter_guest_token = await self.getTwitterGuestToken()
-        print("Successfully Retrieved Twitter Guest Token")
-        return
+        print("Successfully retrieved twitter guest token")
+        return True
 
-    async def response200(self, **kwargs):
-        return False
-
-    async def response401(self, resp, **kwargs):
+    async def handleResponse401(self, resp, **kwargs):
         raise Exception(
             "Your guest token is not valid. Twitter returned err validation code!\n"
             f"Status code: {resp.status}\n"
             f"Response:\n{await resp.text()}"
         )
-        return False
 
-    async def response404(self, url, resp, **kwargs):
+    async def handleResponse404(self, url, resp, **kwargs):
         raise Exception(
             "Error, 404 status!\n"
             f"Cannot find info on such url: {url}\n"
             f"Status code: {resp.status}\n"
             f"Response:\n{await resp.text()}"
         )
-        return False
 
     # To get Twitter guest token
     # we need to make request on special url and get + activate our
     # freshly created guest token. It has expiration time, fewer than 24 hours,
-    # but greater than 8 hours. Thus we can work with one guest token
+    # but greater than 8 hours. Thus, we can work with one guest token
     # Response structure: json
     # { 'guest_token': GUEST_TOKEN }
     async def getTwitterGuestToken(self) -> str:
-        response = await self.asyncRequest(
+        response = await self.request(
             method=HTTP_METHOD.POST,
             url='https://api.twitter.com/1.1/guest/activate.json',
             headers={
@@ -64,7 +61,7 @@ class TwitterAPI(AbstractAPI):
         result = await response.json()
         return result['guest_token']
 
-    # to get succesfull response from twitter API
+    # to get successful response from twitter API
     # we need to get guest_token
     # and init parameters as json-structure in `variables`
     # that json structure needs to consist of 3 fields
@@ -86,7 +83,9 @@ class TwitterAPI(AbstractAPI):
     #                "created_at":"Wed Feb 15 04:02:49 +0000 2017",
     #                "default_profile":false,
     #                "default_profile_image":false,
-    #                "description":"나는야 장난기 넘치는, 20+n살 먹은 예측불가 토끼라구요!☆\n// \uD83C\uDFC6 칭호: '보급형 알쓸신잡' 보유 중\n// \uD83D\uDC64 ENFP-T\n// \uD83C\uDF10 한국어, English\n// \uD83D\uDCDE 디코 서버 '토끼와 악동들' 운영 중\n// \uD83D\uDC8F @pudding1221\uD83D\uDC95",
+    #                "description":"나는야 장난기 넘치는, 20+n살 먹은 예측불가 토끼라구요!☆\n// \uD83C\uDFC6 칭호: '보급형 알쓸신잡' 보유
+    #                중\n// \uD83D\uDC64 ENFP-T\n// \uD83C\uDF10 한국어, English\n// \uD83D\uDCDE 디코 서버 '토끼와 악동들' 운영
+    #                중\n// \uD83D\uDC8F @pudding1221\uD83D\uDC95",
     #                "entities":{
     #                   "description":{
     #                      "urls":[
@@ -143,6 +142,6 @@ class TwitterAPI(AbstractAPI):
                 'withSuperFollowsUserFields': False
             }
         )}
-        response = await self.asyncRequest(method=HTTP_METHOD.GET, url=url, headers=headers, params=parameters)
+        response = await self.request(method=HTTP_METHOD.GET, url=url, headers=headers, params=parameters)
         result = await response.json()
         return result

@@ -11,7 +11,8 @@ class AbstractAPI(ABC):
     min_await: float
     max_await: float
     __session: aiohttp.ClientSession
-    _mappedResponseStatuses: Dict
+    _response_handlers: Dict
+    NON_PREDICTED_RESPONSE_HANDLER = None
 
     def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None):
         if config is None:
@@ -23,20 +24,20 @@ class AbstractAPI(ABC):
         self.max_retries = config.get('request_max_retries', 5)
         self.min_await = config.get('request_min_await', 5.0)
         self.max_await = config.get('request_max_await', 15.0)
-        self._mappedResponseStatuses = {}
-        self.initializeRequestMap()
+        self._response_handlers = {}
+        self.initializeResponseHandlers()
 
     @abstractmethod
-    def initializeRequestMap(self):
-        self._mappedResponseStatuses[-1] = self.nonPredictedResponse
-        self._mappedResponseStatuses[200] = self.response200
+    def initializeResponseHandlers(self):
+        self.NON_PREDICTED_RESPONSE_HANDLER = self.handleNonPredictedResponse
+        self._response_handlers[200] = self.handleResponse200
         return
 
     @abstractmethod
-    async def initializeTokens(self):
+    async def initializeTokens(self) -> bool:
         pass
 
-    async def nonPredictedResponse(self, url, params, resp, **kwargs) -> bool:
+    async def handleNonPredictedResponse(self, url, params, resp, **kwargs) -> bool:
         raise Exception(
             f"Non-predicted response from server\n"
             f"Requested URL: {url}\n"
@@ -44,12 +45,11 @@ class AbstractAPI(ABC):
             f"Status code: {resp.status}\n"
             f"Response:\n{await resp.text()}"
         )
+
+    async def handleResponse200(self, **kwargs):
         return False
 
-    async def response200(self, **kwargs):
-        return False
-
-    async def asyncRequest(self, method, url, params=None, data=None, headers=None) -> aiohttp.ClientResponse:
+    async def request(self, method, url, params=None, data=None, headers=None) -> aiohttp.ClientResponse:
         retry = 0
         while True:
             retry += 1
@@ -61,10 +61,11 @@ class AbstractAPI(ABC):
                 data=data,
             ) as resp:
                 resp_data = await resp.read()
-                need_continue = await self._mappedResponseStatuses.get(
+                response_handler = self._response_handlers.get(
                     resp.status,
-                    self._mappedResponseStatuses[-1]
-                )(
+                    self.NON_PREDICTED_RESPONSE_HANDLER
+                )
+                need_retry = await response_handler(
                     retry=retry,
                     resp=resp,
                     method=method,
@@ -74,7 +75,7 @@ class AbstractAPI(ABC):
                     headers=headers,
                     resp_data=resp_data
                 )
-                if need_continue:
+                if need_retry:
                     await self.requestLimitTimeout(retry_num=retry)
                     continue
                 break

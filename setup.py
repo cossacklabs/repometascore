@@ -5,11 +5,11 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 with open("LICENSE", "r") as fh:
-    license = fh.read()
+    license_file = fh.read()
 
 setuptools.setup(
     name="risky_code_hunter",
-    version="0.9.0",
+    version="0.1.0",
     author="Cossack Labs",
     author_email="dev@cossacklabs.com",
     description="Package to detect risky contributors into repository",
@@ -20,7 +20,6 @@ setuptools.setup(
         "Bug Tracker": "https://github.com/cossacklabs/risky-code-hunter/issues",
     },
     install_requires=[
-        "requests~=2.27.1",
         "aiohttp~=3.8.1"
     ],
     packages=setuptools.find_packages(),

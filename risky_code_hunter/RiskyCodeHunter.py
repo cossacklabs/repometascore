@@ -1,6 +1,6 @@
 import json
 import asyncio
-from typing import List, Dict, Tuple, Iterable
+from typing import List, Dict, Tuple, Iterable, Set
 
 from .RequestManager import RequestManager
 from .RiskyRepo import Repo
@@ -74,7 +74,7 @@ class RiskyCodeHunter:
         return await self.requestManager.githubAPI.checkAuthTokenRetries()
 
     async def scanRepo(self, repo_url) -> Tuple[bool, Repo]:
-        if not await self.checkAuthToken():
+        if not await self.requestManager.initializeTokens():
             return False, None
         if not repo_url:
             raise Exception("No repository URL has been provided!")
@@ -93,9 +93,7 @@ class RiskyCodeHunter:
         return True, repo_scan
 
     async def scanRepos(self, repo_url_list: Iterable[str]) -> List[Tuple[bool, Repo]]:
-        await self.requestManager.initializeTokens()
-
-        if not await self.checkAuthToken():
+        if not await self.requestManager.initializeTokens():
             return []
 
         tasks = []
@@ -136,7 +134,7 @@ class RiskyCodeHunter:
     async def __checkContributorField(self, contributor, field):
         contributor_field = contributor.__dict__.get(field['name'])
         trigRuleList = []
-        if isinstance(contributor_field, set):
+        if isinstance(contributor_field, Set):
             for contributor_field_value in contributor_field:
                 trigRuleList += await self.__checkFieldRules(contributor_field_value.lower(), field)
         elif contributor_field:

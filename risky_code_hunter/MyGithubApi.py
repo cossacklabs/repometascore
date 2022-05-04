@@ -1,4 +1,4 @@
-from typing import Dict, List, overload
+from typing import Dict, List
 
 import aiohttp
 
@@ -17,41 +17,36 @@ class GithubAPI(AbstractAPI):
         self.auth_token_check = False
         return
 
-    async def initializeTokens(self) -> None:
-        await self.checkAuthTokenRetries(self.max_retries)
+    async def initializeTokens(self) -> bool:
+        return await self.checkAuthTokenRetries(self.max_retries)
+
+    def initializeResponseHandlers(self):
+        self.NON_PREDICTED_RESPONSE_HANDLER = self.handleNonPredictedResponse
+        self._response_handlers[200] = self.handleResponse200
+        self._response_handlers[202] = self.handleResponse202
+        self._response_handlers[401] = self.handleResponse401
+        self._response_handlers[403] = self.handleResponse403
+        self._response_handlers[404] = self.handleResponse404
         return
 
-    def initializeRequestMap(self):
-        self._mappedResponseStatuses[-1] = self.nonPredictedResponse
-        self._mappedResponseStatuses[200] = self.response200
-        self._mappedResponseStatuses[202] = self.response202
-        self._mappedResponseStatuses[401] = self.response401
-        self._mappedResponseStatuses[403] = self.response403
-        self._mappedResponseStatuses[404] = self.response404
-        return
-
-    async def response200(self, **kwargs):
-        return False
-
-    async def response202(self, **kwargs):
+    async def handleResponse202(self, **kwargs):
         return True
 
-    async def response401(self, resp, **kwargs):
+    async def handleResponse401(self, resp, **kwargs):
         raise Exception(
             "Your github token is not valid. Github returned err validation code!\n"
             f"Status code: {resp.status}\n"
             f"Response:\n{await resp.json()}"
         )
-        return False
 
-    async def response403(self, resp, **kwargs):
+    async def handleResponse403(self, resp, **kwargs):
         resp_json = await resp.json()
         if isinstance(resp_json, dict) and resp_json.get('message', str()) == self.EXCEEDED_MSG:
             return True
-        await self.nonPredictedResponse(resp=resp, **kwargs)
+        await self.handleNonPredictedResponse(resp=resp, **kwargs)
         return False
 
-    async def response404(self, url, resp, **kwargs):
+    async def handleResponse404(self, url, resp, **kwargs):
         raise Exception(
             "Error, 404 status!\n"
             "Maybe your github repository url is wrong!\n"
@@ -59,10 +54,9 @@ class GithubAPI(AbstractAPI):
             f"Status code: {resp.status}\n"
             f"Response:\n{await resp.json()}"
         )
-        return False
 
     async def checkAuthToken(self) -> bool:
-        resp = await self.asyncRequest(
+        resp = await self.request(
             method=HTTP_METHOD.GET,
             url='https://api.github.com',
             headers={
@@ -114,7 +108,7 @@ class GithubAPI(AbstractAPI):
                 'per_page': per_page,
                 'page': page_num
             }
-            response = await self.asyncRequest(
+            response = await self.request(
                 method=HTTP_METHOD.GET,
                 url=f"https://api.github.com/repos/{repo_author}/{repo_name}/contributors",
                 params=params,
@@ -136,7 +130,7 @@ class GithubAPI(AbstractAPI):
     # expected data
     # https://docs.github.com/en/rest/metrics/statistics#get-all-contributor-commit-activity
     async def getRepoContributorsStats(self, repo_author, repo_name) -> List:
-        contributors_resp = await self.asyncRequest(
+        contributors_resp = await self.request(
             method=HTTP_METHOD.GET,
             url=f"https://api.github.com/repos/{repo_author}/{repo_name}/stats/contributors",
             headers={
@@ -157,7 +151,7 @@ class GithubAPI(AbstractAPI):
             'per_page': 1,
             'page': commit_num
         }
-        commit_info_resp = await self.asyncRequest(
+        commit_info_resp = await self.request(
             method=HTTP_METHOD.GET,
             url=f"https://api.github.com/repos/{repo_author}/{repo_name}/commits",
             params=params,
@@ -173,7 +167,7 @@ class GithubAPI(AbstractAPI):
     # expected data
     # https://docs.github.com/en/rest/users/users#get-a-user
     async def getUserProfileInfo(self, user_url) -> Dict:
-        profile_info_resp = await self.asyncRequest(
+        profile_info_resp = await self.request(
             method=HTTP_METHOD.GET,
             url=user_url,
             headers={

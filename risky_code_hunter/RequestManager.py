@@ -21,10 +21,8 @@ class RequestManager:
 
         return
 
-    async def initializeTokens(self):
-        await self.githubAPI.initializeTokens()
-        await self.twitterAPI.initializeTokens()
-        return
+    async def initializeTokens(self) -> bool:
+        return await self.githubAPI.initializeTokens() and await self.twitterAPI.initializeTokens()
 
     async def closeSession(self):
         if self.__session and not self.__session.closed:
