@@ -15,7 +15,7 @@ class TwitterAPI(AbstractAPI):
 
     def createResponseHandlers(self) -> Dict:
         result = {
-            -1: self.handleNonPredictedResponse,
+            self.UNPREDICTED_RESPONSE_HANDLER: self.handleUnpredictedResponse,
             200: self.handleResponse200,
             401: self.handleResponse401,
             404: self.handleResponse404
