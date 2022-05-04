@@ -13,12 +13,14 @@ class TwitterAPI(AbstractAPI):
         super().__init__(session=session, config=config)
         self.twitter_guest_token = str()
 
-    def initializeResponseHandlers(self):
-        self.NON_PREDICTED_RESPONSE_HANDLER = self.handleNonPredictedResponse
-        self._response_handlers[200] = self.handleResponse200
-        self._response_handlers[401] = self.handleResponse401
-        self._response_handlers[404] = self.handleResponse404
-        return
+    def createResponseHandlers(self) -> Dict:
+        result = {
+            -1: self.handleNonPredictedResponse,
+            200: self.handleResponse200,
+            401: self.handleResponse401,
+            404: self.handleResponse404
+        }
+        return result
 
     async def initializeTokens(self) -> bool:
         if self.twitter_guest_token:
@@ -128,6 +130,8 @@ class TwitterAPI(AbstractAPI):
     #       }
     #    }
     # }
+    # more info about this twitter graphql API:
+    # https://stackoverflow.com/questions/65502651/graphql-value-in-twitter-api
     async def getTwitterAccountInfo(self, twitter_username) -> Dict:
         url = 'https://twitter.com/i/api/graphql/Bhlf1dYJ3bYCKmLfeEQ31A/UserByScreenName'
         headers = {

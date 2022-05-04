@@ -20,14 +20,15 @@ class GithubAPI(AbstractAPI):
     async def initializeTokens(self) -> bool:
         return await self.checkAuthTokenRetries(self.max_retries)
 
-    def initializeResponseHandlers(self):
-        self.NON_PREDICTED_RESPONSE_HANDLER = self.handleNonPredictedResponse
-        self._response_handlers[200] = self.handleResponse200
-        self._response_handlers[202] = self.handleResponse202
-        self._response_handlers[401] = self.handleResponse401
-        self._response_handlers[403] = self.handleResponse403
-        self._response_handlers[404] = self.handleResponse404
-        return
+    def createResponseHandlers(self) -> Dict:
+        result = {
+            -1: self.handleNonPredictedResponse,
+            200: self.handleResponse200,
+            401: self.handleResponse401,
+            403: self.handleResponse403,
+            404: self.handleResponse404
+        }
+        return result
 
     async def handleResponse202(self, **kwargs):
         return True
