@@ -82,7 +82,7 @@ async def main():
             elif args.outputType == 'json':
                 json_output.append(repoResult.getRiskyJSON())
         else:
-            raise Exception("Some error occured while scanning repo. Sorry.")
+            raise Exception("Some error occurred while scanning repo. Sorry.")
 
     if args.outputType == 'json':
         if args.outputfile:

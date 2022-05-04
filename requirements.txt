@@ -1,1 +1,2 @@
 aiohttp~=3.8.1
+asyncwhois~=1.0.0

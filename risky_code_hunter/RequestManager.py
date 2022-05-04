@@ -2,6 +2,7 @@ from typing import Dict
 
 import aiohttp
 
+from .DomainInfo import DomainInfo
 from .MyGithubApi import GithubAPI
 from .TwitterAPI import TwitterAPI
 
@@ -9,6 +10,7 @@ from .TwitterAPI import TwitterAPI
 class RequestManager:
     githubAPI: GithubAPI
     twitterAPI: TwitterAPI
+    domainInfo: DomainInfo
     __session: aiohttp.ClientSession
 
     def __init__(self, config: Dict = None):
@@ -18,6 +20,7 @@ class RequestManager:
 
         self.githubAPI = GithubAPI(session=self.__session, config=config)
         self.twitterAPI = TwitterAPI(session=self.__session, config=config)
+        self.domainInfo = DomainInfo()
 
         return
 

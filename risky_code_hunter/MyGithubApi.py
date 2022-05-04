@@ -146,10 +146,10 @@ class GithubAPI(AbstractAPI):
     # returns only one commit
     # expected data
     # https://docs.github.com/en/rest/commits/commits#list-commits
-    async def getRepoCommitByAuthor(self, repo_author, repo_name, author, commit_num) -> List:
+    async def getRepoCommitByAuthor(self, repo_author, repo_name, author, commit_num, per_page) -> List:
         params = {
             'author': author,
-            'per_page': 1,
+            'per_page': per_page,
             'page': commit_num
         }
         commit_info_resp = await self.request(
