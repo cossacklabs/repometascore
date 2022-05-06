@@ -11,13 +11,13 @@ class RequestManager:
     twitterAPI: TwitterAPI
     __session: aiohttp.ClientSession
 
-    def __init__(self, config: Dict = None):
+    def __init__(self, config: Dict = None, verbose: int = 0):
         if config is None:
             config = {}
         self.__session = aiohttp.ClientSession()
 
-        self.githubAPI = GithubAPI(session=self.__session, config=config)
-        self.twitterAPI = TwitterAPI(session=self.__session, config=config)
+        self.githubAPI = GithubAPI(session=self.__session, config=config, verbose=verbose)
+        self.twitterAPI = TwitterAPI(session=self.__session, config=config, verbose=verbose)
 
         return
 

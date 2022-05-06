@@ -11,7 +11,7 @@ class GithubAPI(AbstractAPI):
     auth_token_check: bool
     EXCEEDED_MSG = 'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.'
 
-    def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None):
+    def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None, verbose: int = 0):
         super().__init__(session=session, config=config)
         self.auth_token = f"token {config.get('git_token', 'ghp_token')}"
         self.auth_token_check = False
@@ -88,12 +88,12 @@ class GithubAPI(AbstractAPI):
         if retries_count <= 0:
             retries_count = self.max_retries
         while not self.auth_token_check and count < retries_count:
-            print("Checking Auth token!")
+            self.print("Checking Auth token!")
             await self.checkAuthToken()
             count += 1
             if not self.auth_token_check:
-                print(f"Retry one more time! Try count: {count}")
-            print("Auth Token is valid!")
+                self.print(f"Retry one more time! Try count: {count}")
+            self.print("Auth Token is valid!")
         return self.auth_token_check
 
     # get list of all contributors:
