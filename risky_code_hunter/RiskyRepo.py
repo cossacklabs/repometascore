@@ -150,7 +150,9 @@ class Repo:
             elif verbose_level == 2:
                 return self.__getFullReport()
 
-    def __getRiskyScore(self) -> Tuple[float, str]:
+    def __getScore(self) -> Tuple[float, str]:
+        risky_score: float
+        verbal_score: str
         arithmetic_mean_from = []
         if self.commits > 0:
             arithmetic_mean_from.append(self.risky_commits / self.commits)
@@ -162,12 +164,16 @@ class Repo:
             risky_score = 0
         else:
             risky_score = statistics.mean(arithmetic_mean_from)
+        # This operation can bring us to 100+ percentage
+        # Thus we need to get minimum of our score and 100 percents
         if self.riskyAuthor:
             risky_score *= 1.5
+
         risky_score *= 100
         risky_score = round(risky_score, 2)
+        risky_score = min(risky_score, 100.0)
 
-        if risky_score >= 100:
+        if risky_score >= 90:
             verbal_score = "Ultra high"
         elif risky_score >= 80:
             verbal_score = "High"
@@ -179,7 +185,7 @@ class Repo:
 
     # Print short human-readable report
     def __getVeryShortReport(self) -> str:
-        risky_score, verbal_score = self.__getRiskyScore()
+        risky_score, verbal_score = self.__getScore()
         result = [
             f"Results of scanning https://github.com/{self.repo_author}/{self.repo_name}:",
             f"Risky score: {risky_score}%",
@@ -189,7 +195,7 @@ class Repo:
 
     # Print short human-readable report
     def __getShortReport(self) -> str:
-        risky_score, verbal_score = self.__getRiskyScore()
+        risky_score, verbal_score = self.__getScore()
 
         if self.commits > 0:
             commits_ratio = self.risky_commits / self.commits
@@ -232,7 +238,7 @@ class Repo:
         return "\n".join(result)
 
     def __getVeryShortJSON(self) -> Dict:
-        risky_score, verbal_score = self.__getRiskyScore()
+        risky_score, verbal_score = self.__getScore()
         result = {
             'repository': f"https://github.com/{self.repo_author}/{self.repo_name}",
             'risky_score': risky_score,
@@ -241,7 +247,7 @@ class Repo:
         return result
 
     def __getShortJSON(self) -> Dict:
-        risky_score, verbal_score = self.__getRiskyScore()
+        risky_score, verbal_score = self.__getScore()
         result = self.__dict__.copy()
         result['repository'] = f"https://github.com/{self.repo_author}/{self.repo_name}"
         result['risky_score'] = risky_score
@@ -253,7 +259,7 @@ class Repo:
         return result
 
     def __getRiskyJSON(self) -> Dict:
-        risky_score, verbal_score = self.__getRiskyScore()
+        risky_score, verbal_score = self.__getScore()
         result = self.__dict__.copy()
         result['repository'] = f"https://github.com/{self.repo_author}/{self.repo_name}"
         result['risky_score'] = risky_score
@@ -269,7 +275,7 @@ class Repo:
         return result
 
     def getJSON(self) -> Dict:
-        risky_score, verbal_score = self.__getRiskyScore()
+        risky_score, verbal_score = self.__getScore()
         result = self.__dict__.copy()
         result['repository'] = f"https://github.com/{self.repo_author}/{self.repo_name}"
         result['risky_score'] = risky_score
