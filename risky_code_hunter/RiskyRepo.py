@@ -1,5 +1,6 @@
 import json
-from typing import List, Dict
+import statistics
+from typing import List, Dict, Tuple
 
 from .RequestManager import RequestManager
 from .Contributor import Contributor
@@ -73,46 +74,6 @@ class Repo:
         for contributor in contributors_list:
             self.addContributor(contributor)
 
-    # Print Full Human-Readable report
-    def printFullReport(self):
-        print(self.getFullReport())
-        return
-
-    # Print short human-readable report
-    def printShortReport(self):
-        print(self.getShortReport())
-        return
-
-    # Print Full Human-Readable report
-    def getFullReport(self) -> str:
-        separator = '=' * 40
-        result = [f"Results of scanning https://github.com/{self.repo_author}/{self.repo_name}"]
-        for contributor in self.riskyContributorsList:
-            if self.repo_author is contributor.login:
-                continue
-            result.append("That contributor triggered rules:")
-            for triggeredRule in contributor.triggeredRules:
-                result.append(triggeredRule.description)
-            riskyDict = contributor.getJSON()
-            riskyDict.pop('triggeredRules', None)
-            result.append(json.dumps(riskyDict, indent=4))
-            result.append(separator)
-        result.append(self.getShortReport())
-        return "\n".join(result)
-
-    # Print short human-readable report
-    def getShortReport(self) -> str:
-        separator = '=' * 40
-        result = [f"Results of scanning https://github.com/{self.repo_author}/{self.repo_name}",
-                  f"Risky commits count: {self.risky_commits} \t Risky delta count: {self.risky_delta}",
-                  f"Total commits count: {self.commits} \t Total delta count: {self.delta}",
-                  f"Risky commits ratio: {self.risky_commits / self.commits} \t"
-                  f"Risky delta ratio: {self.risky_delta / self.delta}"]
-        if self.riskyAuthor:
-            result.append("Warning author of repo suspicious!")
-        result.append(f"{self.risky_contributors_count}/{self.contributors_count} contributors are risky")
-        return "\n".join(result)
-
     async def getContributorsList(self, requestManager: RequestManager) -> List[Contributor]:
         contributors_info = []
         contributors_per_login = {}
@@ -169,8 +130,150 @@ class Repo:
                 self.riskyAuthor = contributor
         return
 
-    def getJSON(self) -> Dict:
+    def getVerboseOutput(self, verbose_level: int = 0, output_type: str = "human"):
+        if not(isinstance(verbose_level, int) and isinstance(output_type, str)):
+            raise Exception("Wrong parameter types!")
+        if output_type.lower() == "json":
+            if verbose_level == 0:
+                return self.__getVeryShortJSON()
+            elif verbose_level == 1:
+                return self.__getShortJSON()
+            elif verbose_level == 2:
+                return self.__getRiskyJSON()
+            elif verbose_level >= 3:
+                return self.getJSON()
+        elif output_type.lower() == "human":
+            if verbose_level == 0:
+                return self.__getVeryShortReport()
+            elif verbose_level == 1:
+                return self.__getShortReport()
+            elif verbose_level == 2:
+                return self.__getFullReport()
+
+    def __getRiskyScore(self) -> Tuple[float, str]:
+        arithmetic_mean_from = []
+        if self.commits > 0:
+            arithmetic_mean_from.append(self.risky_commits / self.commits)
+        if self.delta > 0:
+            arithmetic_mean_from.append(self.risky_delta / self.delta)
+        if self.contributors_count > 0:
+            arithmetic_mean_from.append(self.risky_contributors_count / self.contributors_count)
+        if len(arithmetic_mean_from) == 0:
+            risky_score = 0
+        else:
+            risky_score = statistics.mean(arithmetic_mean_from)
+        if self.riskyAuthor:
+            risky_score *= 1.5
+        risky_score *= 100
+        risky_score = round(risky_score, 2)
+
+        if risky_score >= 100:
+            verbal_score = "Ultra high"
+        elif risky_score >= 80:
+            verbal_score = "High"
+        elif risky_score >= 40:
+            verbal_score = "Medium"
+        else:
+            verbal_score = "Low"
+        return risky_score, verbal_score
+
+    # Print short human-readable report
+    def __getVeryShortReport(self) -> str:
+        risky_score, verbal_score = self.__getRiskyScore()
+        result = [
+            f"Results of scanning https://github.com/{self.repo_author}/{self.repo_name}:",
+            f"Risky score: {risky_score}%",
+            f"{verbal_score} risk factor."
+        ]
+        return "\n".join(result)
+
+    # Print short human-readable report
+    def __getShortReport(self) -> str:
+        risky_score, verbal_score = self.__getRiskyScore()
+
+        if self.commits > 0:
+            commits_ratio = self.risky_commits / self.commits
+        else:
+            commits_ratio = 0
+        if self.delta > 0:
+            delta_ratio = self.risky_delta / self.delta
+        else:
+            delta_ratio = 0
+
+        result = [
+            f"Results of scanning https://github.com/{self.repo_author}/{self.repo_name}:",
+            f"Risky commits count: {self.risky_commits} \t Risky delta count: {self.risky_delta}",
+            f"Total commits count: {self.commits} \t Total delta count: {self.delta}",
+            f"Risky commits ratio: {commits_ratio} \t"
+            f"Risky delta ratio: {delta_ratio}"
+        ]
+        if self.riskyAuthor:
+            result.append("Warning author of repo suspicious!")
+        result.append(f"{self.risky_contributors_count}/{self.contributors_count} contributors are risky")
+        result.append(f"Risky score: {risky_score}%")
+        result.append(f"{verbal_score} risk factor.")
+        return "\n".join(result)
+
+    # Print Full Human-Readable report
+    def __getFullReport(self) -> str:
+        separator = '=' * 40
+        result = [f"Results of scanning https://github.com/{self.repo_author}/{self.repo_name}:"]
+        for contributor in self.riskyContributorsList:
+            if self.repo_author is contributor.login:
+                continue
+            result.append("That contributor triggered rules:")
+            for triggeredRule in contributor.triggeredRules:
+                result.append(triggeredRule.description)
+            riskyDict = contributor.getJSON()
+            riskyDict.pop('triggeredRules', None)
+            result.append(json.dumps(riskyDict, indent=4))
+            result.append(separator)
+        result.append(self.__getShortReport())
+        return "\n".join(result)
+
+    def __getVeryShortJSON(self) -> Dict:
+        risky_score, verbal_score = self.__getRiskyScore()
+        result = {
+            'repository': f"https://github.com/{self.repo_author}/{self.repo_name}",
+            'risky_score': risky_score,
+            'verbal_score': verbal_score
+        }
+        return result
+
+    def __getShortJSON(self) -> Dict:
+        risky_score, verbal_score = self.__getRiskyScore()
         result = self.__dict__.copy()
+        result['repository'] = f"https://github.com/{self.repo_author}/{self.repo_name}"
+        result['risky_score'] = risky_score
+        result['verbal_score'] = verbal_score
+        result.pop('riskyContributorsList')
+        result.pop('contributorsList')
+        result.pop('riskyAuthor')
+
+        return result
+
+    def __getRiskyJSON(self) -> Dict:
+        risky_score, verbal_score = self.__getRiskyScore()
+        result = self.__dict__.copy()
+        result['repository'] = f"https://github.com/{self.repo_author}/{self.repo_name}"
+        result['risky_score'] = risky_score
+        result['verbal_score'] = verbal_score
+        result.pop('contributorsList')
+        result.pop('riskyAuthor')
+
+        riskyContributorsList = []
+        for contributor in self.riskyContributorsList:
+            riskyContributorsList.append(contributor.getJSON())
+        result['riskyContributorsList'] = riskyContributorsList
+
+        return result
+
+    def getJSON(self) -> Dict:
+        risky_score, verbal_score = self.__getRiskyScore()
+        result = self.__dict__.copy()
+        result['repository'] = f"https://github.com/{self.repo_author}/{self.repo_name}"
+        result['risky_score'] = risky_score
+        result['verbal_score'] = verbal_score
 
         result.pop('riskyContributorsList')
         result.pop('riskyAuthor')
@@ -179,18 +282,5 @@ class Repo:
         for contributor in self.contributorsList:
             contributorsList.append(contributor.getJSON())
         result['contributorsList'] = contributorsList
-
-        return result
-
-    def getRiskyJSON(self) -> Dict:
-        result = self.__dict__.copy()
-
-        result.pop('contributorsList')
-        result.pop('riskyAuthor')
-
-        riskyContributorsList = []
-        for contributor in self.riskyContributorsList:
-            riskyContributorsList.append(contributor.getJSON())
-        result['riskyContributorsList'] = riskyContributorsList
 
         return result

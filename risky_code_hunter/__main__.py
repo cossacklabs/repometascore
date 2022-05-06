@@ -69,30 +69,22 @@ async def main():
     json_output = []
     str_result = []
     separator = '=' * 40
+    print("Got result from the program. Processing output!")
+    print(separator)
     for is_success, repoResult in reposResultList:
         if is_success is True:
+            repo_output = repoResult.getVerboseOutput(verbose_level=args.verbose, output_type=args.outputType)
             if args.outputType == 'human':
                 if args.outputfile:
-                    if args.verbose:
-                        str_result.append(repoResult.getFullReport())
-                    else:
-                        str_result.append(repoResult.getShortReport())
-                    str_result.extend(
-                        separator for _ in range(6)
-                    )
+                    str_result.append(repo_output)
+                    str_result.extend(separator for _ in range(1 + args.verbose))
                 else:
-                    if args.verbose:
-                        repoResult.printFullReport()
-                    else:
-                        repoResult.printShortReport()
-                    print("\n".join([separator for _ in range(6)]))
+                    print(repo_output)
+                    print("\n".join([separator for _ in range(1 + args.verbose)]))
             elif args.outputType == 'json':
-                if args.verbose:
-                    json_output.append(repoResult.getJSON())
-                else:
-                    json_output.append(repoResult.getRiskyJSON())
+                json_output.append(repo_output)
         else:
-            raise Exception("Some error occured while scanning repo. Sorry.")
+            raise Exception("Some error occurred while scanning repo. Sorry.")
 
     if args.outputType == 'json':
         if args.outputfile:
