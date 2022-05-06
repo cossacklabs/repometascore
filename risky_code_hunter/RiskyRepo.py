@@ -150,20 +150,31 @@ class Repo:
             elif verbose_level == 2:
                 return self.__getFullReport()
 
+    def __getCommitsRatio(self) -> float:
+        if self.commits <= 0:
+            return 0
+        return self.risky_commits / self.commits
+
+    def __getDeltaRatio(self) -> float:
+        if self.delta <= 0:
+            return 0
+        return self.risky_delta / self.delta
+
+    def __getContributorsRatio(self) -> float:
+        if self.contributors_count <= 0:
+            return 0
+        return self.risky_contributors_count / self.contributors_count
+
     def __getScore(self) -> Tuple[float, str]:
         risky_score: float
         verbal_score: str
-        arithmetic_mean_from = []
-        if self.commits > 0:
-            arithmetic_mean_from.append(self.risky_commits / self.commits)
-        if self.delta > 0:
-            arithmetic_mean_from.append(self.risky_delta / self.delta)
-        if self.contributors_count > 0:
-            arithmetic_mean_from.append(self.risky_contributors_count / self.contributors_count)
-        if len(arithmetic_mean_from) == 0:
-            risky_score = 0
-        else:
-            risky_score = statistics.mean(arithmetic_mean_from)
+        arithmetic_mean_from = [
+            self.__getCommitsRatio(),
+            self.__getDeltaRatio(),
+            self.__getContributorsRatio()
+        ]
+        risky_score = statistics.mean(arithmetic_mean_from)
+
         # This operation can bring us to 100+ percentage
         # Thus we need to get minimum of our score and 100 percents
         if self.riskyAuthor:
@@ -197,14 +208,8 @@ class Repo:
     def __getShortReport(self) -> str:
         risky_score, verbal_score = self.__getScore()
 
-        if self.commits > 0:
-            commits_ratio = self.risky_commits / self.commits
-        else:
-            commits_ratio = 0
-        if self.delta > 0:
-            delta_ratio = self.risky_delta / self.delta
-        else:
-            delta_ratio = 0
+        commits_ratio = self.__getCommitsRatio()
+        delta_ratio = self.__getDeltaRatio()
 
         result = [
             f"Results of scanning https://github.com/{self.repo_author}/{self.repo_name}:",
