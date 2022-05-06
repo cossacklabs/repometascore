@@ -9,7 +9,7 @@ from .HTTP_METHOD import HTTP_METHOD
 class TwitterAPI(AbstractAPI):
     twitter_guest_token: str
 
-    def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None):
+    def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None, verbose: int = 0):
         super().__init__(session=session, config=config)
         self.twitter_guest_token = str()
 
@@ -25,9 +25,9 @@ class TwitterAPI(AbstractAPI):
     async def initializeTokens(self) -> bool:
         if self.twitter_guest_token:
             return True
-        print("Getting twitter guest token")
+        self.print("Getting twitter guest token")
         self.twitter_guest_token = await self.getTwitterGuestToken()
-        print("Successfully retrieved twitter guest token")
+        self.print("Successfully retrieved twitter guest token")
         return True
 
     async def handleResponse401(self, resp, **kwargs):
