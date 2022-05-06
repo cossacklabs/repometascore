@@ -75,45 +75,18 @@ class Repo:
 
     # Print Full Human-Readable report
     def printFullReport(self):
-        for contributor in self.riskyContributorsList:
-            if self.repo_author is contributor.login:
-                continue
-            print("That contributor triggered rules:")
-            for triggeredRule in contributor.triggeredRules:
-                print(triggeredRule.description)
-            riskyDict = contributor.getJSON()
-            riskyDict.pop('triggeredRules', None)
-            print(json.dumps(riskyDict, indent=4))
-            print("=" * 40)
-
-        self.printShortReport()
+        print(self.getFullReport())
         return
 
     # Print short human-readable report
     def printShortReport(self):
-        print(f"Risky commits count: {self.risky_commits} \t Risky delta count: {self.risky_delta}")
-        print(f"Total commits count: {self.commits} \t Total delta count: {self.delta}")
-        print(
-            f"Risky commits ratio: {self.risky_commits / self.commits} \t"
-            f"Risky delta ratio: {self.risky_delta / self.delta}"
-        )
-        print(f"{self.risky_contributors_count}/{self.contributors_count} contributors are risky")
-
-        if self.riskyAuthor:
-            print("=" * 40)
-            print("Warning author of repo suspicious!")
-            print("That contributor triggered rules:")
-            for triggeredRule in self.riskyAuthor.triggeredRules:
-                print(triggeredRule.description)
-            riskyDict = self.riskyAuthor.getJSON()
-            riskyDict.pop('triggeredRules', None)
-            print(json.dumps(riskyDict, indent=4))
+        print(self.getShortReport())
         return
 
     # Print Full Human-Readable report
     def getFullReport(self) -> str:
         separator = '=' * 40
-        result = []
+        result = [f"Results of scanning https://github.com/{self.repo_author}/{self.repo_name}"]
         for contributor in self.riskyContributorsList:
             if self.repo_author is contributor.login:
                 continue
@@ -130,22 +103,14 @@ class Repo:
     # Print short human-readable report
     def getShortReport(self) -> str:
         separator = '=' * 40
-        result = []
-        result.append(f"Risky commits count: {self.risky_commits} \t Risky delta count: {self.risky_delta}")
-        result.append(f"Total commits count: {self.commits} \t Total delta count: {self.delta}")
-        result.append(f"Risky commits ratio: {self.risky_commits / self.commits} \t"
-                      f"Risky delta ratio: {self.risky_delta / self.delta}")
-        result.append(f"{self.risky_contributors_count}/{self.contributors_count} contributors are risky")
-
+        result = [f"Results of scanning https://github.com/{self.repo_author}/{self.repo_name}",
+                  f"Risky commits count: {self.risky_commits} \t Risky delta count: {self.risky_delta}",
+                  f"Total commits count: {self.commits} \t Total delta count: {self.delta}",
+                  f"Risky commits ratio: {self.risky_commits / self.commits} \t"
+                  f"Risky delta ratio: {self.risky_delta / self.delta}"]
         if self.riskyAuthor:
-            result.append(separator)
             result.append("Warning author of repo suspicious!")
-            result.append("That contributor triggered rules:")
-            for triggeredRule in self.riskyAuthor.triggeredRules:
-                result.append(triggeredRule.description)
-            riskyDict = self.riskyAuthor.getJSON()
-            riskyDict.pop('triggeredRules', None)
-            result.append(json.dumps(riskyDict, indent=4))
+        result.append(f"{self.risky_contributors_count}/{self.contributors_count} contributors are risky")
         return "\n".join(result)
 
     async def getContributorsList(self, requestManager: RequestManager) -> List[Contributor]:
