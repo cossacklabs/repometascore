@@ -32,6 +32,7 @@ async def main():
                               help="output type. Can be either 'human' or 'json'. 'human' by default")
     group_output.add_argument('--outputfile', metavar='OUTPUT_FILE', type=str, action='store',
                               help='path to output file')
+    group_output.add_argument('-v', '--verbose', action='count', default=0)
     args = parser.parse_args()
 
     git_token = None
@@ -68,21 +69,22 @@ async def main():
     json_output = []
     str_result = []
     separator = '=' * 40
+    print("Got result from the program. Processing output!")
+    print(separator)
     for is_success, repoResult in reposResultList:
         if is_success is True:
+            repo_output = repoResult.getVerboseOutput(verbose_level=args.verbose, output_type=args.outputType)
             if args.outputType == 'human':
                 if args.outputfile:
-                    str_result.append(repoResult.getFullReport())
-                    str_result.extend(
-                        separator for _ in range(6)
-                    )
+                    str_result.append(repo_output)
+                    str_result.extend(separator for _ in range(1 + args.verbose))
                 else:
-                    repoResult.printFullReport()
-                    print("\n".join([separator for _ in range(6)]))
+                    print(repo_output)
+                    print("\n".join([separator for _ in range(1 + args.verbose)]))
             elif args.outputType == 'json':
-                json_output.append(repoResult.getRiskyJSON())
+                json_output.append(repo_output)
         else:
-            raise Exception("Some error occured while scanning repo. Sorry.")
+            raise Exception("Some error occurred while scanning repo. Sorry.")
 
     if args.outputType == 'json':
         if args.outputfile:

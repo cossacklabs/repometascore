@@ -29,7 +29,7 @@ def main():
     risky_json = []
     for is_success, repoResult in scanResults:
         if is_success is True:
-            risky_json.append(repoResult.getRiskyJSON())
+            risky_json.append(repoResult.__getRiskyJSON())
     print(json.dumps(risky_json, indent=4))
 
     # All values in repoResult can be read, but not be written!
