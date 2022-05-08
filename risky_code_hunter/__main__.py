@@ -54,7 +54,7 @@ async def main():
         except FileNotFoundError:
             raise Exception("Wrong file with urls has been provided!")
 
-    riskyCodeHunter = RiskyCodeHunter(config=args.config, git_token=git_token)
+    riskyCodeHunter = RiskyCodeHunter(config=args.config, git_token=git_token, verbose=args.verbose)
 
     reposResultList: List[Tuple[bool, Repo]]
 
@@ -69,8 +69,9 @@ async def main():
     json_output = []
     str_result = []
     separator = '=' * 40
-    print("Got result from the program. Processing output!")
-    print(separator)
+    if args.verbose:
+        print("Got result from the program. Processing output!")
+        print(separator)
     for is_success, repoResult in reposResultList:
         if is_success is True:
             repo_output = repoResult.getVerboseOutput(verbose_level=args.verbose, output_type=args.outputType)
@@ -99,8 +100,8 @@ async def main():
         except Exception as err:
             print("\n".join(str_result))
             print(err)
-
-    print(f"--- {end_time - start_time} seconds ---")
+    if args.verbose:
+        print(f"--- {end_time - start_time} seconds ---")
 
     await riskyCodeHunter.close()
     return
