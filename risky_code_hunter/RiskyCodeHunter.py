@@ -48,14 +48,16 @@ def get_repo_author(repo_url):
 class RiskyCodeHunter:
     repo_list: List[Repo]
     requestManager: RequestManager
+    verbose: int
     config: Dict
 
-    def __init__(self, config, git_token=None):
+    def __init__(self, config, git_token=None, verbose: int = 0):
         self.__loadConfig(config)
         if git_token:
             self.config['git_token'] = git_token
-        self.requestManager = RequestManager(self.config)
+        self.requestManager = RequestManager(self.config, verbose=verbose)
         self.repo_list = []
+        self.verbose = verbose
         return
 
     # load config via config file
@@ -85,11 +87,11 @@ class RiskyCodeHunter:
         )
         self.repo_list.append(repo_scan)
 
-        print(f"Starting to scan '{repo_scan.repo_author}/{repo_scan.repo_name}' repository")
+        self.print(f"Starting to scan '{repo_scan.repo_author}/{repo_scan.repo_name}' repository")
         await repo_scan.getContributorsList(self.requestManager)
         await self.__checkAndFillRepoContributorWrap(repo_scan)
         repo_scan.updateRiskyList()
-        print(f"End of scanning '{repo_scan.repo_author}/{repo_scan.repo_name}' repository")
+        self.print(f"End of scanning '{repo_scan.repo_author}/{repo_scan.repo_name}' repository")
         return True, repo_scan
 
     async def scanRepos(self, repo_url_list: Iterable[str]) -> List[Tuple[bool, Repo]]:
@@ -102,7 +104,7 @@ class RiskyCodeHunter:
         results = list(await asyncio.gather(*tasks, return_exceptions=True))
         for result in results:
             if isinstance(result, Exception):
-                print(result)
+                print("Error while scanning repo\n", result)
         return list(filter(lambda x: not isinstance(x, Exception), results))
 
     async def __checkAndFillRepoContributorWrap(self, repo_scan: Repo) -> List[Contributor]:
@@ -158,6 +160,10 @@ class RiskyCodeHunter:
                     )
                     trigRuleList.append(trigRule)
         return trigRuleList
+
+    def print(self, *args, verbose_level: int = 1, **kwargs):
+        if self.verbose >= verbose_level:
+            print(*args, **kwargs)
 
     async def close(self):
         await self.requestManager.closeSession()
