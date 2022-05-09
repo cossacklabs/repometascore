@@ -1,11 +1,22 @@
 import asyncio
-import asyncwhois
-import socket
+import time
 from functools import partial, wraps
 from typing import Dict, Any, List
+from urllib.parse import urlparse
 
-import httpx
-from asyncwhois import DomainLookup, NumberLookup
+import aiodns
+import pycares
+import whois
+
+from .AbstractAPI import AbstractAPI
+
+
+class NICClientQuiet(whois.NICClient):
+    def whois(self, query, hostname, flags, many_results=False, quiet=True):
+        return super().whois(query, hostname, flags, many_results, quiet)
+
+
+whois.NICClient = NICClientQuiet
 
 
 def async_wrap(func):
@@ -18,87 +29,83 @@ def async_wrap(func):
     return run
 
 
-class DomainInfo:
-    retryTimes: int
-    timeout: float
-    __httpx_client: httpx.AsyncClient
+class DomainInfo(AbstractAPI):
+    retry_times: int
+    dns_resolver: aiodns.DNSResolver
 
-    def __init__(self, retryTimes=5):
-        self.retryTimes = retryTimes
-        self.timeout = 1.0
-        self.__httpx_client = httpx.AsyncClient(follow_redirects=True, timeout=self.timeout)
+    def __init__(self, session=None, config=None, retry_times=6, verbose: int = 0):
+        super().__init__(session=session, config=config, verbose=verbose)
+        self.retry_times = retry_times
+        self.dns_resolver = aiodns.DNSResolver()
         return
 
-    async def getDomainInfo(self, domain: str) -> Dict:
-        result = {'location': []}
+    async def initializeTokens(self) -> bool:
+        return True
 
-        if domain.find("://") != -1:
-            domain = domain[domain.find("://") + 3:]
-        if domain.find("/") != -1:
-            domain = domain[:domain.find("/")]
-        ip = await self.getIpByDomain(domain)
-        if isinstance(ip, str) and ip:
-            tasks = [
-                asyncio.ensure_future(
-                    self.retryAsyncFunc(asyncwhois.aio_whois_domain, domain=domain, timeout=self.timeout)
-                ),
-                asyncio.ensure_future(
-                    self.retryAsyncFunc(asyncwhois.aio_rdap_domain, domain=domain, httpx_client=self.__httpx_client)
-                ),
-                asyncio.ensure_future(
-                    self.retryAsyncFunc(asyncwhois.aio_whois_ipv4, ipv4=ip, timeout=self.timeout)
-                ),
-                asyncio.ensure_future(
-                    self.retryAsyncFunc(asyncwhois.aio_rdap_ipv4, ipv4=ip, httpx_client=self.__httpx_client)
-                )
-            ]
-            whois_results = list(await asyncio.gather(*tasks))
-            for whois_res in whois_results:
-                result['location'].extend(await self.getLocationInfoFromWhois(whois_res))
+    def createResponseHandlers(self) -> Dict:
+        result = {
+            self.UNPREDICTED_RESPONSE_HANDLER_INDEX: self.handleUnpredictedResponse,
+            200: self.handleResponse200,
+        }
         return result
 
-    async def retryAsyncFunc(self, func, *args, **kwargs) -> Any:
-        retryNum = 0
+    @staticmethod
+    def get_domain(url) -> str:
+        return urlparse(url).netloc.lower()
+
+    async def get_domain_info(self, domain: str) -> Dict:
+        domain = self.get_domain(domain)
+        is_result_present, cached_result = await self._awaitFromCache(domain)
+        if is_result_present:
+            return cached_result['result']
+        result = {'location': []}
+        ip = await self.get_ip_by_domain(domain)
+        if ip:
+            tasks = [
+                asyncio.ensure_future(
+                    self.retry_sync_func(whois.whois, url=domain, flags=whois.NICClient.WHOIS_RECURSE)
+                ),
+                asyncio.ensure_future(
+                    self.retry_sync_func(whois.whois, url=ip, flags=whois.NICClient.WHOIS_RECURSE)
+                ),
+            ]
+            whois_results = await asyncio.gather(*tasks)
+            for whois_res in whois_results:
+                result['location'].extend(await self.get_location_info_from_whois(whois_res))
+        cached_result['result'] = result
+        event = cached_result.pop('event', None)
+        if event:
+            event.set()
+        return result
+
+    @async_wrap
+    def retry_sync_func(self, func, *args, **kwargs) -> Any:
+        retry_num = 0
         result = None
-        while retryNum < self.retryTimes:
-            retryNum += 1
+        while retry_num < self.retry_times:
+            retry_num += 1
             try:
-                result = await func(*args, **kwargs)
+                result = func(*args, **kwargs)
+                if result.text[:22] == "Socket not responding:":
+                    time.sleep(self.requestLimitTimeout(retry_num))
+                    continue
                 break
-            except asyncio.TimeoutError as e:
-                # print("Timeout", func.__name__, kwargs.get('domain', kwargs.get('ipv4')))
+            except (NotImplementedError, AttributeError, ConnectionResetError, KeyboardInterrupt,
+                    whois.parser.PywhoisError):
                 return None
-            except NotImplementedError as e:
-                # print(e, func.__name__, kwargs.get('domain', kwargs.get('ipv4')))
-                return None
-            except httpx.ConnectTimeout as e:
-                # print("Connect Timeout", e, func.__name__, kwargs.get('domain', kwargs.get('ipv4')))
-                return None
-            except AttributeError as e:
-                # print("Attribute Error", e, func.__name__, kwargs.get('domain', kwargs.get('ipv4')))
-                return None
-            except ConnectionResetError as e:
-                # print("Connection Reset Error", e, func.__name__, kwargs.get('domain', kwargs.get('ipv4')))
-                return None
-            except httpx.ReadTimeout as e:
-                # print("Read Timeout", e, func.__name__, kwargs.get('domain', kwargs.get('ipv4')))
-                return None
-            except Exception as e:
-                # print(e, func.__name__, kwargs.get('domain', kwargs.get('ipv4')))
+            except Exception:
+                time.sleep(self.requestLimitTimeout(retry_num))
                 continue
         return result
 
-    async def getLocationInfoFromWhois(self, whois) -> List:
-        if isinstance(whois, DomainLookup) or isinstance(whois, NumberLookup):
-            if isinstance(whois.parser_output, Dict):
-                parsed = whois.parser_output
-            elif isinstance(whois.query_output, Dict):
-                parsed = whois.query_output
-            else:
-                return []
+    async def get_location_info_from_whois(self, whois_res: whois.WhoisEntry) -> List:
+        if isinstance(whois_res, whois.WhoisEntry):
+            pass
+        elif isinstance(whois_res, whois.dict):
+            pass
         else:
             return []
-        patternList = [
+        pattern_list = [
             'address',
             'city',
             'state',
@@ -106,17 +113,18 @@ class DomainInfo:
             'registrar'
         ]
         result = []
-        for key, value in parsed.items():
+        for key, value in whois_res.items():
             if isinstance(value, str) and value:
-                for pattern in patternList:
+                for pattern in pattern_list:
                     if pattern in key:
                         result.append(value)
         return result
 
-    @async_wrap
-    def getIpByDomain(self, domain) -> str:
+    async def get_ip_by_domain(self, domain):
         try:
-            ip = socket.gethostbyname(domain)
-        except Exception:
-            ip = str()
-        return ip
+            ipv4: List[pycares.ares_query_a_result] = await self.dns_resolver.query(domain, "A")
+        except aiodns.error.DNSError:
+            return str()
+        if ipv4:
+            return ipv4[0].host
+        return str()

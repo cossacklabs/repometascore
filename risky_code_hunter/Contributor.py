@@ -198,26 +198,40 @@ class Contributor:
         return result
 
     async def fillWithTwitterInfo(self, twitterAPI: TwitterAPI):
-        if not (isinstance(self.twitter_username, str) and self.twitter_username):
+        if not isinstance(self.twitter_username, Set):
             return
-        twitter_info = await twitterAPI.getTwitterAccountInfo(self.twitter_username)
-        try:
-            add_dict = {
-                'name': twitter_info['data']['user']['result']['legacy']['name'],
-                'location': twitter_info['data']['user']['result']['legacy']['location'],
-                'bio': twitter_info['data']['user']['result']['legacy']['description']
-            }
-        except KeyError as e:
-            # Current twitter account does not exists
-            # Example: https://twitter.com/1anisim
-            # Response example:
-            # { "data" : {} }
-            return
-        self.addValue(add_dict)
+        for twitter_username in self.twitter_username:
+            twitter_info = await twitterAPI.getTwitterAccountInfo(twitter_username)
+            try:
+                add_dict = {
+                    'name': twitter_info['data']['user']['result']['legacy']['name'],
+                    'location': twitter_info['data']['user']['result']['legacy']['location'],
+                    'bio': twitter_info['data']['user']['result']['legacy']['description']
+                }
+            except KeyError as e:
+                # Current twitter account does not exists
+                # Example: https://twitter.com/1anisim
+                # Response example:
+                # { "data" : {} }
+                continue
+            self.addValue(add_dict)
         return
 
     async def fillWithBlogURLInfo(self, domainInfo: DomainInfo):
         if not (isinstance(self.blog, str) and self.blog):
             return
-        blogURLLocationInfo = await domainInfo.getDomainInfo(self.blog)
+        blog_domain = domainInfo.get_domain(self.blog)
+        if blog_domain[-8:] == "about.me":
+            return
+            # TODO about.me retrieve info part
+        if blog_domain[-12:] == "linkedin.com":
+            return
+            # TODO www.linkedin.com retrieve info part
+        if blog_domain[-10:] == "github.com":
+            return
+        if blog_domain[-9:] == "github.io":
+            return
+        if blog_domain[-12:] == "facebook.com":
+            return
+        blogURLLocationInfo = await domainInfo.get_domain_info(self.blog)
         self.location.update(blogURLLocationInfo['location'])

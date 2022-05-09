@@ -1,2 +1,3 @@
 aiohttp~=3.8.1
-asyncwhois~=1.0.0
+git+https://github.com/nicopapamichael/whois@939e05d#egg=python-whois
+aiodns~=3.0.0
