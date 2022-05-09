@@ -13,7 +13,7 @@ class RequestManager:
     domainInfo: DomainInfo
     __session: aiohttp.ClientSession
 
-    def __init__(self, config: Dict = None):
+    def __init__(self, config: Dict = None, verbose: int = 0):
         if config is None:
             config = {}
         self.__session = aiohttp.ClientSession()
