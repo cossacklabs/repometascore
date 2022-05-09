@@ -19,13 +19,13 @@ def main():
     riskyCodeHunter.checkAuthToken()
 
     repoResult: Repo
-    is_success, repoResult = asyncio.run(riskyCodeHunter.scanRepo(repo_url))
+    is_success, repoResult = asyncio.run(riskyCodeHunter.scan_repo(repo_url))
     if is_success is True:
         repoResult.printFullReport()
     else:
         raise Exception("Some error occured while scanning repo. Sorry.")
 
-    scanResults = asyncio.run(riskyCodeHunter.scanRepos(repo_url_list))
+    scanResults = asyncio.run(riskyCodeHunter.scan_repos(repo_url_list))
     risky_json = []
     for is_success, repoResult in scanResults:
         if is_success is True:
@@ -55,7 +55,7 @@ def main():
 
     # Process through all contributors
     contributor: Contributor
-    for contributor in repoResult.contributorsList:
+    for contributor in repoResult.contributors_list:
         print(
             "Main details:",
             f"Login: {contributor.login}",
@@ -90,36 +90,36 @@ def main():
             )
 
     # Process through all risky contributors
-    for contributor in repoResult.riskyContributorsList:
+    for contributor in repoResult.risky_contributors_list:
         # Process through all their triggered rules
         for triggeredRule in contributor.triggeredRules:
             # same as usual contributors
             continue
 
     # If repository author was considered as risky:
-    if repoResult.riskyAuthor:
+    if repoResult.risky_author:
         print(
             "Main details:",
-            f"Login: {repoResult.riskyAuthor.login}",
-            f"Contributor GitHubAPI URL: {repoResult.riskyAuthor.url}",
+            f"Login: {repoResult.risky_author.login}",
+            f"Contributor GitHubAPI URL: {repoResult.risky_author.url}",
             "=" * 12,
             "Details about commits in repo",
-            f"Commits into scanned repo: {repoResult.riskyAuthor.commits}",
-            f"Added lines into scanned repo: {repoResult.riskyAuthor.additions}",
-            f"Deleted lines from scanned repo: {repoResult.riskyAuthor.deletions}",
-            f"Accumulation of additions and deletions into scanned repo: {repoResult.riskyAuthor.delta}",
+            f"Commits into scanned repo: {repoResult.risky_author.commits}",
+            f"Added lines into scanned repo: {repoResult.risky_author.additions}",
+            f"Deleted lines from scanned repo: {repoResult.risky_author.deletions}",
+            f"Accumulation of additions and deletions into scanned repo: {repoResult.risky_author.delta}",
             "=" * 12,
-            f"Location: {repoResult.riskyAuthor.location}",
-            f"Emails: {repoResult.riskyAuthor.emails}",
-            f"Twitter Username: {repoResult.riskyAuthor.twitter_username}",
-            f"Names: {repoResult.riskyAuthor.names}",
-            f"Company: {repoResult.riskyAuthor.company}",
-            f"Blog: {repoResult.riskyAuthor.blog}",
-            f"Bio: {repoResult.riskyAuthor.bio}",
-            f"Risk Rating: {repoResult.riskyAuthor.riskRating}",
-            f"Triggered Rules count: {len(repoResult.riskyAuthor.triggeredRules)}"
+            f"Location: {repoResult.risky_author.location}",
+            f"Emails: {repoResult.risky_author.emails}",
+            f"Twitter Username: {repoResult.risky_author.twitter_username}",
+            f"Names: {repoResult.risky_author.names}",
+            f"Company: {repoResult.risky_author.company}",
+            f"Blog: {repoResult.risky_author.blog}",
+            f"Bio: {repoResult.risky_author.bio}",
+            f"Risk Rating: {repoResult.risky_author.riskRating}",
+            f"Triggered Rules count: {len(repoResult.risky_author.triggeredRules)}"
         )
-        for triggeredRule in repoResult.riskyAuthor.triggeredRules:
+        for triggeredRule in repoResult.risky_author.triggeredRules:
             print(
                 "Triggered Rule info",
                 f"Type: {triggeredRule.type}",
@@ -136,11 +136,11 @@ def main():
     repoResult.risk_boundary_value = 2
 
     # recalculate repoResult risky values and risky contributors
-    repoResult.updateRiskyList()
+    repoResult.update_risky_list()
 
     # Use it
     # Process through all risky contributors
-    for contributor in repoResult.riskyContributorsList:
+    for contributor in repoResult.risky_contributors_list:
         # Process through all their triggered rules
         for triggeredRule in contributor.triggeredRules:
             # same as usual contributors
