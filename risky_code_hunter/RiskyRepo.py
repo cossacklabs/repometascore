@@ -147,7 +147,7 @@ class Repo:
                 return self.__getVeryShortReport()
             elif verbose_level == 1:
                 return self.__getShortReport()
-            elif verbose_level == 2:
+            elif verbose_level >= 2:
                 return self.__getFullReport()
 
     def __getCommitsRatio(self) -> float:

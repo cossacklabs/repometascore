@@ -12,7 +12,7 @@ class GithubAPI(AbstractAPI):
     EXCEEDED_MSG = 'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.'
 
     def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None, verbose: int = 0):
-        super().__init__(session=session, config=config)
+        super().__init__(session=session, config=config, verbose=verbose)
         self.auth_token = f"token {config.get('git_token', 'ghp_token')}"
         self.auth_token_check = False
         return
