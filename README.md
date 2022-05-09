@@ -43,6 +43,12 @@ pip3 install https://github.com/cossacklabs/risky-code-hunter/archive/main.zip
 python3 -m risky_code_hunter --url https://github.com/yandex/yandex-tank --tokenfile token_file.txt
 ```
 
+4. Also, there is a verbose parameter. It can be set with different levels. When nothing is set, the user will only get short output. To set the level of verbose output, you need to repeat the parameter several times. For example:
+   - nothing 	- verbose with level 0. Output only risk level and percentage.
+   - `-v`   	- verbose with level 1. Additionally to the ‘zero’ level, output info about the program and commits, code delta, and contributors risk ratio.
+   - `-vv`  	- verbose with level 2. Additionally to the previous level, output info about every risky contributor.
+   - `-vvv` 	- verbose with level 3. Additionally outputs info about every contributor. Currently, it only works with `JSON`-type output.
+
 Enjoy the output and make decision whether to use this repository for your project.
 
 ## Customisation
@@ -63,19 +69,19 @@ python3 -m risky_code_hunter --url https://github.com/yandex/yandex-tank --confi
 
 ## Configuration file
 
-Configuration file should be a valid json file that contains a json dictionary.
+Configuration file should be a valid JSON file that contains a JSON dictionary.
 
 Variables that are used in the config file:
 
 ### Root
-| Variable                 | Type         | Description                                                                                                                                                                             | 
-|--------------------------|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `risk_boundary_value`    | `float`      | Used in Repo. Sets boundary value that helps us define whether we should consider contributors as risky or not. It compares the `Contributor.riskRating` value with the boundary value. |
-| `git_token`              | `str`        | Your GitHub token as string.                                                                                                                                                            |
-| `auth_token_max_retries` | `int`        | Optional. Default `5`. It shows how often we should try to reconnect to the user’s GitHub token.                                                                                        |
-| `github_min_await`       | `float`      | Optional. Default `5.0`. Minimum wait time (in seconds) while GitHub API responds with timeouts.                                                                                         |
-| `github_max_await`       | `float`      | Optional. Default `15.0`. Maximum wait time (in seconds) while GitHub API responds with timeouts.                                                                                        |
-| `fields`                 | `List[Dict]` | List of fields with rules. More details about this variable are in the next section.                                                                                                    |
+| Variable              | Type         | Description                                                                                                                                                                             | 
+|-----------------------|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `risk_boundary_value` | `float`      | Used in Repo. Sets boundary value that helps us define whether we should consider contributors as risky or not. It compares the `Contributor.riskRating` value with the boundary value. |
+| `git_token`           | `str`        | Your GitHub token as string.                                                                                                                                                            |
+| `request_max_retries` | `int`        | Optional. Default `5`. It shows how often we should try to reconnect to some kinds of requests.                                                                                         |
+| `request_min_await`   | `float`      | Optional. Default `5.0`. Minimum wait time (in seconds) when a remote server responds with timeouts.                                                                                    |
+| `request_max_await`   | `float`      | Optional. Default `15.0`. Maximum wait time (in seconds) when a remote server responds with timeouts.                                                                                   |
+| `fields`              | `List[Dict]` | List of fields with rules. More details about this variable are in the next section.                                                                                                    |
 
 ### Fields
 | Variable | Type         | Description                                                                                                                                                                                          | 
@@ -95,3 +101,5 @@ Variables that are used in the config file:
 "Risky Code Hunter" is distributed under the terms of the Apache License (Version 2.0).
 
 This software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+
+
