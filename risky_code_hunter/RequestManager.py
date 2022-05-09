@@ -1,3 +1,4 @@
+import os
 from typing import Dict
 
 import aiohttp
@@ -16,7 +17,9 @@ class RequestManager:
     def __init__(self, config: Dict = None, verbose: int = 0):
         if config is None:
             config = {}
-        self.__session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20))
+
+        HTTP_REQUEST_TIMEOUT = int(os.environ.get('HTTP_REQUEST_TIMEOUT', 20))
+        self.__session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=HTTP_REQUEST_TIMEOUT))
 
         self.githubAPI = GithubAPI(session=self.__session, config=config, verbose=verbose)
         self.twitterAPI = TwitterAPI(session=self.__session, config=config, verbose=verbose)
