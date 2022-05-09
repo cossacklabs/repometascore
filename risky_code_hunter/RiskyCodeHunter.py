@@ -53,8 +53,8 @@ class RiskyCodeHunter:
 
     def __init__(self, config, git_tokens=None, verbose: int = 0):
         self.__load_config(config)
-        if git_token:
-            self.config['git_token'] = git_token
+        if isinstance(git_tokens, List):
+            self.config['git_tokens'] = git_tokens
         self.requestManager = RequestManager(self.config, verbose=verbose)
         self.repo_list = []
         self.verbose = verbose

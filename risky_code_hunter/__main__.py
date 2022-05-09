@@ -34,11 +34,14 @@ async def main():
     group_output.add_argument('-v', '--verbose', action='count', default=0)
     args = parser.parse_args()
 
-    git_token = None
+    git_tokens = []
     if args.tokenfile:
         try:
             with open(args.tokenfile) as token_file:
-                git_token = token_file.readline().strip()
+                for line in token_file:
+                    line = line.strip()
+                    if line:
+                        git_tokens.append(line.strip())
         except FileNotFoundError:
             raise Exception("Wrong token file has been provided!")
 
@@ -53,14 +56,13 @@ async def main():
         except FileNotFoundError:
             raise Exception("Wrong file with urls has been provided!")
 
-    riskyCodeHunter = RiskyCodeHunter(config=args.config, git_token=git_token, verbose=args.verbose)
+    risky_code_hunter = RiskyCodeHunter(config=args.config, git_tokens=git_tokens, verbose=args.verbose)
 
-    reposResultList: List[Tuple[bool, Repo]]
+    repos_result_list: List[Tuple[bool, Repo]]
 
     start_time = time.time()
-    reposResultList = []
     if args.url:
-        reposResultList = await riskyCodeHunter.scanRepos(args.url)
+        repos_result_list = await risky_code_hunter.scan_repos(args.url)
     else:
         raise Exception("No URLs were provided!")
     end_time = time.time()
