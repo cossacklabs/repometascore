@@ -1,5 +1,5 @@
-import asyncio
 import argparse
+import asyncio
 import json
 import os
 import time
@@ -11,9 +11,8 @@ from risky_code_hunter.RiskyRepo import Repo
 
 async def main():
     parser = argparse.ArgumentParser(
-        description=
-        'Processing GitHub repositories and showing risky contributors.\n'
-        'Our GitHub repo: https://github.com/cossacklabs/risky-code-hunter'
+        description='Processing GitHub repositories and showing risky contributors.\n'
+                    'Our GitHub repo: https://github.com/cossacklabs/risky-code-hunter'
     )
     group_repos = parser.add_mutually_exclusive_group(required=True)
     group_configuration = parser.add_mutually_exclusive_group(required=True)
@@ -23,13 +22,13 @@ async def main():
     group_repos.add_argument('--urlfile', metavar='URL_FILE', type=str, action='store',
                              help='file with list of urls to repos that needs to be checked')
     group_configuration.add_argument('--config', metavar='CONFIG_PATH', type=str, action='store',
-                       default=os.path.join(os.path.dirname(__file__), 'data/config.json'),
-                       help='path to configuration file')
+                                     default=os.path.join(os.path.dirname(__file__), 'data/config.json'),
+                                     help='path to configuration file')
     group_configuration.add_argument('--tokenfile', metavar='GIT_TOKEN_FILE', type=str, action='store',
-                       help='file with your github token in it')
+                                     help='file with your github token in it')
     group_output.add_argument('--outputType', metavar='OUTPUT_TYPE', type=str, action='store',
                               choices=['human', 'json'], default='human',
-                              help="output type. Can be either 'human' or 'json'. 'human' by default")
+                              help="output type_verbal. Can be either 'human' or 'json'. 'human' by default")
     group_output.add_argument('--outputfile', metavar='OUTPUT_FILE', type=str, action='store',
                               help='path to output file')
     group_output.add_argument('-v', '--verbose', action='count', default=0)
@@ -72,9 +71,9 @@ async def main():
     if args.verbose:
         print("Got result from the program. Processing output!")
         print(separator)
-    for is_success, repoResult in reposResultList:
+    for is_success, repoResult in repos_result_list:
         if is_success is True:
-            repo_output = repoResult.getVerboseOutput(verbose_level=args.verbose, output_type=args.outputType)
+            repo_output = repoResult.get_verbose_output(verbose_level=args.verbose, output_type=args.outputType)
             if args.outputType == 'human':
                 if args.outputfile:
                     str_result.append(repo_output)
@@ -103,7 +102,7 @@ async def main():
     if args.verbose:
         print(f"--- {end_time - start_time} seconds ---")
 
-    await riskyCodeHunter.close()
+    await risky_code_hunter.close()
     return
 
 

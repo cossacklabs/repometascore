@@ -39,13 +39,13 @@ class DomainInfo(AbstractAPI):
         self.dns_resolver = aiodns.DNSResolver()
         return
 
-    async def initializeTokens(self) -> bool:
+    async def initialize_tokens(self) -> bool:
         return True
 
-    def createResponseHandlers(self) -> Dict:
+    def create_response_handlers(self) -> Dict:
         result = {
-            self.UNPREDICTED_RESPONSE_HANDLER_INDEX: self.handleUnpredictedResponse,
-            200: self.handleResponse200,
+            self.UNPREDICTED_RESPONSE_HANDLER_INDEX: self.handle_unpredicted_response,
+            200: self.handle_response_200,
         }
         return result
 
@@ -55,7 +55,7 @@ class DomainInfo(AbstractAPI):
 
     async def get_domain_info(self, domain: str) -> Dict:
         domain = self.get_domain(domain)
-        is_result_present, cached_result = await self._awaitFromCache(domain)
+        is_result_present, cached_result = await self._await_from_cache(domain)
         if is_result_present:
             return cached_result['result']
         result = {'location': []}
@@ -87,14 +87,14 @@ class DomainInfo(AbstractAPI):
             try:
                 result = func(*args, **kwargs)
                 if result.text[:22] == "Socket not responding:":
-                    time.sleep(self.requestLimitTimeout(retry_num))
+                    time.sleep(self.request_limit_timeout(retry_num))
                     continue
                 break
             except (NotImplementedError, AttributeError, ConnectionResetError, KeyboardInterrupt,
                     whois.parser.PywhoisError):
                 return None
             except Exception:
-                time.sleep(self.requestLimitTimeout(retry_num))
+                time.sleep(self.request_limit_timeout(retry_num))
                 continue
         return result
 

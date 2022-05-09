@@ -6,6 +6,22 @@ from .AbstractAPI import AbstractAPI
 from .HTTP_METHOD import HTTP_METHOD
 
 
+class BadToken(Exception):
+    pass
+
+
+class NoTokensLeft(Exception):
+    pass
+
+
+class TokenExceededRateLimit(Exception):
+    pass
+
+
+class PageNotFound(Exception):
+    pass
+
+
 class GithubAPI(AbstractAPI):
     auth_token: str
     auth_token_check: bool
@@ -20,37 +36,41 @@ class GithubAPI(AbstractAPI):
     async def initializeTokens(self) -> bool:
         return await self.checkAuthTokenRetries(self.max_retries)
 
-    def createResponseHandlers(self) -> Dict:
+    def create_response_handlers(self) -> Dict:
         result = {
-            self.UNPREDICTED_RESPONSE_HANDLER_INDEX: self.handleUnpredictedResponse,
-            200: self.handleResponse200,
-            401: self.handleResponse401,
-            403: self.handleResponse403,
-            404: self.handleResponse404
+            self.UNPREDICTED_RESPONSE_HANDLER_INDEX: self.handle_unpredicted_response,
+            200: self.handle_response_200,
+            202: self.handle_response_202,
+            401: self.handle_response_401,
+            403: self.handle_response_403,
+            404: self.handle_response_404,
+            429: self.handle_response_429,
+            502: self.handle_response_502,
+            503: self.handle_response_503
         }
         return result
 
-    async def handleResponse202(self, **kwargs):
+    async def handle_response_202(self, **kwargs):
         return True
 
-    async def handleResponse401(self, resp, **kwargs):
-        raise Exception(
-            "Your github token is not valid. Github returned err validation code!\n"
+    async def handle_response_401(self, resp, **kwargs):
+        raise BadToken(
+            "Your GitHub token is not valid. Github returned err validation code!\n"
             f"Status code: {resp.status}\n"
             f"Response:\n{await resp.json()}"
         )
 
-    async def handleResponse403(self, resp, **kwargs):
+    async def handle_response_403(self, resp, **kwargs):
         resp_json = await resp.json()
         if isinstance(resp_json, dict) and resp_json.get('message', str()) == self.EXCEEDED_MSG:
             return True
         await self.handleUnpredictedResponse(resp=resp, **kwargs)
         return False
 
-    async def handleResponse404(self, url, resp, **kwargs):
-        raise Exception(
+    async def handle_response_404(self, url, resp, **kwargs):
+        raise PageNotFound(
             "Error, 404 status!\n"
-            "Maybe your github repository url is wrong!\n"
+            "Maybe your GitHub repository url is wrong!\n"
             f"Cannot find info on such url: {url}\n"
             f"Status code: {resp.status}\n"
             f"Response:\n{await resp.json()}"
@@ -99,7 +119,7 @@ class GithubAPI(AbstractAPI):
     # get list of all contributors:
     # GitHub API expected data:
     # https://docs.github.com/en/rest/repos/repos#list-repository-contributors
-    async def getRepoContributors(self, repo_author, repo_name, anon=0) -> List:
+    async def get_repo_contributors(self, repo_author, repo_name, anon=0) -> List:
         per_page = 100
         page_num = 1
         contributors_json = []
@@ -130,7 +150,7 @@ class GithubAPI(AbstractAPI):
     # get contributors with stats (only top100)
     # expected data
     # https://docs.github.com/en/rest/metrics/statistics#get-all-contributor-commit-activity
-    async def getRepoContributorsStats(self, repo_author, repo_name) -> List:
+    async def get_repo_contributors_stats(self, repo_author, repo_name) -> List:
         contributors_resp = await self.request(
             method=HTTP_METHOD.GET,
             url=f"https://api.github.com/repos/{repo_author}/{repo_name}/stats/contributors",
@@ -146,7 +166,7 @@ class GithubAPI(AbstractAPI):
     # returns only one commit
     # expected data
     # https://docs.github.com/en/rest/commits/commits#list-commits
-    async def getRepoCommitByAuthor(self, repo_author, repo_name, author, commit_num, per_page) -> List:
+    async def get_repo_commit_by_author(self, repo_author, repo_name, author, commit_num, per_page) -> List:
         params = {
             'author': author,
             'per_page': per_page,
