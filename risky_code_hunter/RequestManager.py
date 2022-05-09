@@ -16,11 +16,11 @@ class RequestManager:
     def __init__(self, config: Dict = None, verbose: int = 0):
         if config is None:
             config = {}
-        self.__session = aiohttp.ClientSession()
+        self.__session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20))
 
-        self.githubAPI = GithubAPI(session=self.__session, config=config)
-        self.twitterAPI = TwitterAPI(session=self.__session, config=config)
-        self.domainInfo = DomainInfo()
+        self.githubAPI = GithubAPI(session=self.__session, config=config, verbose=verbose)
+        self.twitterAPI = TwitterAPI(session=self.__session, config=config, verbose=verbose)
+        self.domainInfo = DomainInfo(session=self.__session, verbose=verbose)
 
         return
 
