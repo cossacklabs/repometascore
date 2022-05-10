@@ -80,7 +80,7 @@ class Repo:
 
         # get list of all contributors:
         # anonymous contributors are currently turned off
-        contributors_json = await request_manager.githubAPI.get_repo_contributors(self.repo_author, self.repo_name)
+        contributors_json = await request_manager.github_api.get_repo_contributors(self.repo_author, self.repo_name)
         for contributor in contributors_json:
             contributor_obj = Contributor(contributor)
             contributors_info.append(contributor_obj)
@@ -88,7 +88,7 @@ class Repo:
                 contributors_per_login[contributor_obj.login] = contributor_obj
 
         # get contributors with stats (only top100)
-        contributors_json = await request_manager.githubAPI.get_repo_contributors_stats(
+        contributors_json = await request_manager.github_api.get_repo_contributors_stats(
             self.repo_author, self.repo_name
         )
         for contributor in contributors_json:
@@ -120,7 +120,7 @@ class Repo:
         self.risky_author = None
 
         for contributor in self.contributors_list:
-            if contributor.riskRating < self.risk_boundary_value:
+            if contributor.risk_rating < self.risk_boundary_value:
                 continue
             self.risky_commits += contributor.commits
             self.risky_additions += contributor.additions
@@ -235,10 +235,10 @@ class Repo:
             if self.repo_author is contributor.login:
                 continue
             result.append("That contributor triggered rules:")
-            for triggeredRule in contributor.triggeredRules:
+            for triggeredRule in contributor.triggered_rules:
                 result.append(triggeredRule.description)
             risky_dict = contributor.get_json()
-            risky_dict.pop('triggeredRules', None)
+            risky_dict.pop('triggered_rules', None)
             result.append(json.dumps(risky_dict, indent=4))
             result.append(separator)
         result.append(self.__get_short_report())
