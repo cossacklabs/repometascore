@@ -1,5 +1,6 @@
 import asyncio
 from typing import List, Dict, Set
+from urllib.parse import urlparse
 
 from .DomainInfo import DomainInfo
 from .MyGithubApi import GithubAPI
@@ -139,20 +140,21 @@ class Contributor:
         await self.fill_with_profile_info(request_manager.githubAPI)
         blog_domain: str = request_manager.domainInfo.get_domain(self.blog)
         if blog_domain == "twitter.com":
-            twitter_username = self.blog
-            if twitter_username.find("://") != -1:
-                twitter_username = twitter_username[twitter_username.find("://") + 3:]
-            if twitter_username.find("/") != -1:
-                twitter_username = twitter_username[twitter_username.find("/") + 1:]
-                if twitter_username.find("/") != -1:
-                    twitter_username = twitter_username[:twitter_username.find("/")]
+            try:
+                index = 0
+                twitter_username = ""
+                while index == 0 or twitter_username == "#!":
+                    twitter_username = str(urlparse(self.blog).path).strip('/').split('/')[index]
+                    index += 1
                 self.twitter_username.add(twitter_username)
-                self.blog = str()
+                self.blog = ""
+            except IndexError:
+                pass
         tasks = [
-            asyncio.ensure_future(self.fill_with_commits_info(repo_author, repo_name, request_manager.githubAPI)),
-            asyncio.ensure_future(self.fill_with_companies_info(request_manager.githubAPI)),
-            asyncio.ensure_future(self.fill_with_twitter_info(request_manager.twitterAPI)),
-            asyncio.ensure_future(self.fill_with_blog_url_info(request_manager.domainInfo)),
+            self.fill_with_commits_info(repo_author, repo_name, request_manager.githubAPI),
+            self.fill_with_companies_info(request_manager.githubAPI),
+            self.fill_with_twitter_info(request_manager.twitterAPI),
+            self.fill_with_blog_url_info(request_manager.domainInfo),
         ]
         await asyncio.gather(*tasks)
         return self
