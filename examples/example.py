@@ -74,25 +74,25 @@ def main():
             f"Company: {contributor.company}",
             f"Blog: {contributor.blog}",
             f"Bio: {contributor.bio}",
-            f"Risk Rating: {contributor.riskRating}",
-            f"Triggered Rules count: {len(contributor.triggeredRules)}"
+            f"Risk Rating: {contributor.risk_rating}",
+            f"Triggered Rules count: {len(contributor.triggered_rules)}"
         )
         triggeredRule: TriggeredRule
-        for triggeredRule in contributor.triggeredRules:
+        for triggeredRule in contributor.triggered_rules:
             print(
                 "Triggered Rule info",
-                f"Type: {triggeredRule.type}",
-                f"Field Name: {triggeredRule.fieldName}",
+                f"Type: {triggeredRule.type_verbal}",
+                f"Field Name: {triggeredRule.field_name}",
                 f"Trigger: {triggeredRule.trigger}",
                 f"Value (str from contributor that has triggered a rule): {triggeredRule.value}",
-                f"Risk Value (risk rating of triggered rule): {triggeredRule.riskValue}",
+                f"Risk Value (risk rating of triggered rule): {triggeredRule.risk_value}",
                 f"Description (human-readable): {triggeredRule.description}"
             )
 
     # Process through all risky contributors
     for contributor in repoResult.risky_contributors_list:
         # Process through all their triggered rules
-        for triggeredRule in contributor.triggeredRules:
+        for triggeredRule in contributor.triggered_rules:
             # same as usual contributors
             continue
 
@@ -116,17 +116,17 @@ def main():
             f"Company: {repoResult.risky_author.company}",
             f"Blog: {repoResult.risky_author.blog}",
             f"Bio: {repoResult.risky_author.bio}",
-            f"Risk Rating: {repoResult.risky_author.riskRating}",
-            f"Triggered Rules count: {len(repoResult.risky_author.triggeredRules)}"
+            f"Risk Rating: {repoResult.risky_author.risk_rating}",
+            f"Triggered Rules count: {len(repoResult.risky_author.triggered_rules)}"
         )
-        for triggeredRule in repoResult.risky_author.triggeredRules:
+        for triggeredRule in repoResult.risky_author.triggered_rules:
             print(
                 "Triggered Rule info",
-                f"Type: {triggeredRule.type}",
-                f"Field Name: {triggeredRule.fieldName}",
+                f"Type: {triggeredRule.type_verbal}",
+                f"Field Name: {triggeredRule.field_name}",
                 f"Trigger: {triggeredRule.trigger}",
                 f"Value (str from contributor that has triggered a rule): {triggeredRule.value}",
-                f"Risk Value (risk rating of triggered rule): {triggeredRule.riskValue}",
+                f"Risk Value (risk rating of triggered rule): {triggeredRule.risk_value}",
                 f"Description (human-readable): {triggeredRule.description}"
             )
 
@@ -142,7 +142,7 @@ def main():
     # Process through all risky contributors
     for contributor in repoResult.risky_contributors_list:
         # Process through all their triggered rules
-        for triggeredRule in contributor.triggeredRules:
+        for triggeredRule in contributor.triggered_rules:
             # same as usual contributors
             continue
     return
