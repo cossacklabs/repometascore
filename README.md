@@ -103,9 +103,10 @@ Variables that are used in the config file:
 
 # Next steps
 
-1. Adding more checks, improving dictionaries.
-2. Adding risk factor based on comments language.
-3. Adding checks inspired by [What are Weak Links in the npm Supply Chain?](https://arxiv.org/abs/2112.10165) paper.
+1. Improving location parsing & scores.
+2. Adding more checks, improving dictionaries.
+3. Adding risk factor based on comments language.
+4. Adding checks inspired by [What are Weak Links in the npm Supply Chain?](https://arxiv.org/abs/2112.10165) paper.
 
 ---
 
