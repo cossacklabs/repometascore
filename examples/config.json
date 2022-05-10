@@ -273,7 +273,6 @@
             "ishimbay",
             "isilkul",
             "iskitim",
-            "istra",
             "ivangorod",
             "ivanovo",
             "ivanteyevka",
@@ -333,7 +332,6 @@
             "khasavyurt",
             "khilok",
             "khimki",
-            "kholm",
             "kholmsk",
             "khotkovo",
             "khvalynsk",
@@ -2261,7 +2259,7 @@
             "рф"
           ],
           "type": "Weak",
-          "risk_value": 1.0
+          "risk_value": 0.1
         }
       ]
     },
@@ -2313,6 +2311,9 @@
       "rules": [
         {
           "triggers": [
+            "rusia",
+            "russky",
+            "rossia",
             "russia",
             "rossiya",
             "rambler",
@@ -2329,7 +2330,7 @@
             "rf"
           ],
           "type": "Weak",
-          "risk_value": 1.0
+          "risk_value": 0.1
         }
       ]
     },
@@ -2338,8 +2339,10 @@
       "rules": [
         {
           "triggers": [
+            "rusia",
+            "russky",
+            "rossia",
             "russia",
-            "rossiya",
             "rambler",
             "yandex"
           ],
@@ -2354,7 +2357,7 @@
             "rf"
           ],
           "type": "Weak",
-          "risk_value": 1.0
+          "risk_value": 0.1
         }
       ]
     },
@@ -2363,8 +2366,10 @@
       "rules": [
         {
           "triggers": [
+            "rusia",
+            "russky",
+            "rossia",
             "russia",
-            "rossiya",
             "rambler",
             "yandex"
           ],
@@ -2379,7 +2384,7 @@
             "rf"
           ],
           "type": "Weak",
-          "risk_value": 1.0
+          "risk_value": 0.1
         }
       ]
     },
@@ -2388,6 +2393,9 @@
       "rules": [
         {
           "triggers": [
+            "rusia",
+            "russky",
+            "rossia",
             "russia",
             "россия",
             "rossiya",
@@ -2407,7 +2415,7 @@
             "рф"
           ],
           "type": "Weak",
-          "risk_value": 1.0
+          "risk_value": 0.1
         }
       ]
     },
@@ -2927,7 +2935,7 @@
             "рф"
           ],
           "type": "Weak",
-          "risk_value": 1.0
+          "risk_value": 0.1
         }
       ]
     },
@@ -2936,6 +2944,9 @@
       "rules": [
         {
           "triggers": [
+            "rusia",
+            "russky",
+            "rossia",
             "russia",
             "россия",
             "rossiya",
@@ -2955,7 +2966,7 @@
             "рф"
           ],
           "type": "Weak",
-          "risk_value": 1.0
+          "risk_value": 0.1
         }
       ]
     }
