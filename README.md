@@ -43,7 +43,7 @@ pip3 install https://github.com/cossacklabs/risky-code-hunter/archive/main.zip
 python3 -m risky_code_hunter --url https://github.com/yandex/yandex-tank --tokenfile token_file.txt
 ```
 
-4. Also, there is a verbose parameter. It can be set with different levels. When nothing is set, the user will only get short output. To set the level of verbose output, you need to repeat the parameter several times. For example:
+4. The output is controlled by verbose parameter. By default, the verbose level is 0, which means the shortest  output. To control verbosity, use `-v` param:
    - nothing 	- verbose with level 0. Output only risk level and percentage.
    - `-v`   	- verbose with level 1. Additionally to the ‘zero’ level, output info about the program and commits, code delta, and contributors risk ratio.
    - `-vv`  	- verbose with level 2. Additionally to the previous level, output info about every risky contributor.
