@@ -1,6 +1,7 @@
 import asyncio
 import json
 from typing import List, Dict, Tuple, Iterable, Set
+from urllib.parse import urlparse
 
 from .Contributor import Contributor
 from .RequestManager import RequestManager
@@ -15,16 +16,8 @@ from .TriggeredRule import TriggeredRule
 # example:
 # input: 'https://github.com/yandex/yandex-tank'
 # output: 'yandex-tank'
-def get_repo_name(repo_url):
-    repo_name = repo_url.lstrip("https://")
-    repo_name = repo_name.lstrip("http://")
-
-    repo_name = repo_name[repo_name.find('/') + 1:]
-    repo_name = repo_name[repo_name.find('/') + 1:]
-    if repo_name.find('/') > 0:
-        repo_name = repo_name[:repo_name.find('/')]
-
-    return repo_name
+def get_repo_name(repo_url) -> str:
+    return str(urlparse(repo_url).path).strip('/').split('/')[1]
 
 
 # This function returns repository name from
@@ -35,14 +28,8 @@ def get_repo_name(repo_url):
 # example:
 # input: 'https://github.com/yandex/yandex-tank'
 # output: 'yandex'
-def get_repo_author(repo_url):
-    repo_name = repo_url.lstrip("https://")
-    repo_name = repo_name.lstrip("http://")
-
-    repo_author = repo_name[repo_name.find('/') + 1:]
-    if repo_author.find('/') > 0:
-        repo_author = repo_author[:repo_author.find('/')]
-    return repo_author
+def get_repo_author(repo_url) -> str:
+    return str(urlparse(repo_url).path).strip('/').split('/')[0]
 
 
 class RiskyCodeHunter:
