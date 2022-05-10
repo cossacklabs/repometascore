@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import os
 import random
 import time
 from typing import Dict, List
@@ -38,7 +39,8 @@ class GithubAPI(AbstractAPI):
         self.auth_tokens = {}
         git_tokens = config.get('git_tokens', [])
         for git_token in git_tokens:
-            self.auth_tokens[f'token {git_token}'] = {"isGood": False, "reset": -1, "isFull": False, "event": None}
+            self.auth_tokens[f'token {git_token}'] = \
+                {"is_good": False, "reset_time": -1, "is_full": False, "event": None}
         self.auth_tokens_checked = False
         self.__print_timestamps = {}
         return
@@ -73,10 +75,10 @@ class GithubAPI(AbstractAPI):
     async def handle_response_403(self, resp, **kwargs):
         resp_json = await resp.json()
         if isinstance(resp_json, dict):
-            if resp_json.get('message', str()) == self.EXCEEDED_SECONDARY_MSG:
+            if resp_json.get('message', "") == self.EXCEEDED_SECONDARY_MSG:
                 return True
-            elif self.EXCEEDED_RATE_LIMIT_MSG in resp_json.get('message', str()):
-                raise TokenExceededRateLimit(resp_json.get('message', str()))
+            elif self.EXCEEDED_RATE_LIMIT_MSG in resp_json.get('message', ""):
+                raise TokenExceededRateLimit(resp_json.get('message', ""))
         await self.handle_unpredicted_response(resp=resp, **kwargs)
         return False
 
@@ -105,10 +107,10 @@ class GithubAPI(AbstractAPI):
             if event:
                 await event.wait()
                 return token in self.auth_tokens
-            if self.auth_tokens[token]['isFull'] and self.auth_tokens[token]['reset'] > int(time.time()):
+            if self.auth_tokens[token]['is_full'] and self.auth_tokens[token]['reset_time'] > int(time.time()):
                 return True
         else:
-            self.auth_tokens[token] = {"isGood": False, "reset": -1, "isFull": False, "event": None}
+            self.auth_tokens[token] = {"is_good": False, "reset_time": -1, "is_full": False, "event": None}
 
         event = asyncio.Event()
         self.auth_tokens[token]["event"] = event
@@ -131,9 +133,9 @@ class GithubAPI(AbstractAPI):
 
         if resp.status == 200:
             resp_json = await resp.json()
-            self.auth_tokens[token]['isGood'] = True
-            self.auth_tokens[token]['reset'] = resp_json['rate']['reset']
-            self.auth_tokens[token]['isFull'] = resp_json['rate']['remaining'] <= 0
+            self.auth_tokens[token]['is_good'] = True
+            self.auth_tokens[token]['reset_time'] = resp_json['rate']['reset']
+            self.auth_tokens[token]['is_full'] = resp_json['rate']['remaining'] <= 0
             self.auth_tokens[token]['event'] = None
             event.set()
             return True
@@ -148,13 +150,11 @@ class GithubAPI(AbstractAPI):
         if self.auth_tokens_checked:
             return True
         self.print("Checking Auth tokens!")
-        index = 1
-        for token in self.auth_tokens.copy():
-            if self.auth_tokens[token]['isGood']:
+        for index, token in enumerate(self.auth_tokens.copy()):
+            if self.auth_tokens[token]['is_good']:
                 continue
             if not await self.check_auth_token(token):
-                self.print(f"Token #{index} is not valid!")
-            index += 1
+                self.print(f"Token #{index + 1} is not valid!")
         if len(self.auth_tokens) == 0:
             raise BadToken("All your github tokens are not valid!")
         self.print("Auth Tokens are valid!")
@@ -243,7 +243,7 @@ class GithubAPI(AbstractAPI):
         companies = await companies_resp.json()
         tasks = []
         for company in companies:
-            tasks.append(asyncio.ensure_future(self.get_company_info(company['url'])))
+            tasks.append(self.get_company_info(company['url']))
         companies_info = list(await asyncio.gather(*tasks))
         return companies_info
 
@@ -251,8 +251,8 @@ class GithubAPI(AbstractAPI):
     # expected data
     # https://docs.github.com/en/rest/orgs/orgs#get-an-organization
     async def get_company_info(self, company_url) -> Dict:
-        is_result_present, cached_result = await self._await_from_cache(company_url)
-        if is_result_present:
+        is_result_already_present, cached_result = await self._await_from_cache(company_url)
+        if is_result_already_present:
             return cached_result['result']
         company_resp = await self.request(
             method=HTTP_METHOD.GET,
@@ -267,24 +267,29 @@ class GithubAPI(AbstractAPI):
 
     async def get_random_token(self) -> str:
         remaining_tokens = []
-        is_greater_than_2mins = True
-        time_of_token_reset = 999999999999999999999999999999999999999999
+        is_greater_than_allowed_time = True
+        ALLOWED_TIME_TO_WAIT = int(os.environ.get('ALLOWED_TIME_TO_WAIT', 12000))
+        time_of_token_reset = 2**64
         for token, token_info in self.auth_tokens.copy().items():
-            if token_info['isFull']:
-                token_reset = token_info.get('reset', 0)
-                if token_reset >= int(time.time()):
-                    is_greater_than_2mins = is_greater_than_2mins and (int(time.time()) - token_reset) > 12000
-                    time_of_token_reset = min(time_of_token_reset, token_reset)
+            if token_info['is_full']:
+                token_reset_time = token_info.get('reset_time', 0)
+                if token_reset_time >= int(time.time()):
+                    is_greater_than_allowed_time = \
+                        is_greater_than_allowed_time and (int(time.time()) - token_reset_time) > ALLOWED_TIME_TO_WAIT
+                    time_of_token_reset = min(time_of_token_reset, token_reset_time)
                 else:
-                    self.auth_tokens[token]['isFull'] = False
+                    self.auth_tokens[token]['is_full'] = False
                     remaining_tokens.append(token)
             else:
                 remaining_tokens.append(token)
         if len(remaining_tokens) == 0:
-            if is_greater_than_2mins:
+            if is_greater_than_allowed_time:
                 print("Timeout is too big")
                 raise NoTokensLeft("Every token is on long cooldown right now!")
-            sleep_duration = max(time_of_token_reset - time.time(), 0.5) + 2
+            # Let's wait an additional 1.1 seconds as GitHub sometimes would not allow
+            # To run at the same time with token reset
+            sleep_duration = max(time_of_token_reset - int(time.time()), 1.0) + 1.1
+            # We are using 5 seconds to wait between prints, as it seems like optimal value between such prints
             self.print(
                 f"Let's wait till {datetime.datetime.fromtimestamp(time_of_token_reset)} and then back to work!",
                 f"Requests to GitHub will not be done in the next {datetime.timedelta(seconds=sleep_duration)} seconds",
@@ -292,8 +297,10 @@ class GithubAPI(AbstractAPI):
                 time_to_wait=5.0
             )
             await asyncio.sleep(sleep_duration)
+            # Randomization in the next method will allow us to make requests at slightly different time.
             await self.request_limit_timeout_and_await(5)
-            self.print("GitHub requests are running again!", signature="Running Again", time_to_wait=5.0)
+            # We are using 5 seconds to wait between prints, as it seems like optimal value between such prints
+            self.print("GitHub's requests are running again!", signature="Running Again", time_to_wait=5.0)
             return await self.get_random_token()
         return random.choice(remaining_tokens)
 
@@ -314,7 +321,7 @@ class GithubAPI(AbstractAPI):
                 await self.check_auth_token(headers['Authorization'])
                 continue
 
-    def print(self, *args, signature=None, time_to_wait: float = 1, **kwargs):
+    def print(self, *args, signature=None, time_to_wait: float = 1.0, **kwargs):
         if isinstance(signature, str):
             if signature in self.__print_timestamps:
                 if (time.time() - self.__print_timestamps[signature]['last_print']) < \

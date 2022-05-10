@@ -14,6 +14,7 @@ class AbstractAPI(ABC):
     __session: aiohttp.ClientSession
     _response_handlers: Dict
     _results_cache: Dict
+    _results_cache_lock: asyncio.Lock
     UNPREDICTED_RESPONSE_HANDLER_INDEX = -1
 
     def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None, verbose: int = 0):
@@ -58,17 +59,21 @@ class AbstractAPI(ABC):
         return
 
     async def _await_from_cache(self, key: Any) -> Tuple[bool, Dict]:
-        cached_result = self._get_from_cache(key)
-        if cached_result:
-            event: asyncio.Event = cached_result.get('event')
+        is_result_already_present = False
+        async with self._results_cache_lock.acquire():
+            cached_result = self._get_from_cache(key)
+            if cached_result:
+                event: asyncio.Event = cached_result.get('event')
+                is_result_already_present = True
+            else:
+                event = asyncio.Event()
+                cached_result = {'event': event}
+                self._save_to_cache(key, cached_result)
+        if is_result_already_present:
             if event:
                 await event.wait()
-                return True, cached_result
-        else:
-            event = asyncio.Event()
-            cached_result = {'event': event}
-            self._save_to_cache(key, cached_result)
-        return False, cached_result
+            return is_result_already_present, cached_result
+        return is_result_already_present, cached_result
 
     def _get_from_cache(self, key: Any) -> Any:
         return self._results_cache.get(key)
