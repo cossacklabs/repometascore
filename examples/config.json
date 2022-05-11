@@ -1,6 +1,6 @@
 {
   "risk_boundary_value": 0.5,
-  "git_token": "ghp_token",
+  "git_tokens": ["ghp_token"],
   "request_max_retries": 5,
   "request_min_await": 10.0,
   "request_max_await": 30.0,
