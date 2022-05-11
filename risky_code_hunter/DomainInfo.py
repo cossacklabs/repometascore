@@ -73,7 +73,7 @@ class DomainInfo(AbstractAPI):
             ]
             whois_results = await asyncio.gather(*tasks)
             for whois_res in whois_results:
-                result['location'].extend(await self.get_location_info_from_whois(whois_res))
+                result['location'].extend(self.get_location_info_from_whois(whois_res))
         await self._cache.set(domain, result)
         return result
 
@@ -97,7 +97,7 @@ class DomainInfo(AbstractAPI):
                 continue
         return result
 
-    async def get_location_info_from_whois(self, whois_res: whois.WhoisEntry) -> List:
+    def get_location_info_from_whois(self, whois_res: whois.WhoisEntry) -> List:
         if isinstance(whois_res, whois.WhoisEntry):
             pass
         elif isinstance(whois_res, whois.dict):
