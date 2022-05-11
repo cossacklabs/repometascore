@@ -1,9 +1,11 @@
 import asyncio
 import random
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Tuple
+from typing import Dict
 
 import aiohttp
+
+from .cache import Cache
 
 
 class AbstractAPI(ABC):
@@ -13,8 +15,8 @@ class AbstractAPI(ABC):
     verbose: int
     __session: aiohttp.ClientSession
     _response_handlers: Dict
-    _results_cache: Dict
     UNPREDICTED_RESPONSE_HANDLER_INDEX = -1
+    _cache: Cache
 
     def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None, verbose: int = 0):
         if config is None:
@@ -31,7 +33,6 @@ class AbstractAPI(ABC):
         self.handle_unpredicted_response = self._response_handlers.pop(
             self.UNPREDICTED_RESPONSE_HANDLER_INDEX, self.handle_unpredicted_response
         )
-        self._results_cache = {}
 
     @abstractmethod
     def create_response_handlers(self) -> Dict:
@@ -52,30 +53,6 @@ class AbstractAPI(ABC):
 
     async def handle_response_200(self, **kwargs):
         return False
-
-    def _save_to_cache(self, key: Any, some_result: Any):
-        self._results_cache[key] = some_result
-        return
-
-    async def _await_from_cache(self, key: Any) -> Tuple[bool, Dict]:
-        cached_result = self._get_from_cache(key)
-        if cached_result:
-            event: asyncio.Event = cached_result.get('event')
-            if event:
-                await event.wait()
-                return True, cached_result
-        else:
-            event = asyncio.Event()
-            cached_result = {'event': event}
-            self._save_to_cache(key, cached_result)
-        return False, cached_result
-
-    def _get_from_cache(self, key: Any) -> Any:
-        return self._results_cache.get(key)
-
-    def _remove_from_cache(self, key):
-        self._results_cache.pop(key, None)
-        return
 
     async def request(self, method, url, params=None, data=None, headers=None) -> aiohttp.ClientResponse:
         retry = 0

@@ -55,27 +55,26 @@ class DomainInfo(AbstractAPI):
 
     async def get_domain_info(self, domain: str) -> Dict:
         domain = self.get_domain(domain)
-        is_result_present, cached_result = await self._await_from_cache(domain)
+        try:
+            # set timeout to 180 as getting whois info takes too much time
+            is_result_present, cached_result = await self._cache.get_and_await(
+                domain, create_new_awaitable=True, timeout=180
+            )
+        except asyncio.TimeoutError:
+            is_result_present = False
         if is_result_present:
-            return cached_result['result']
+            return cached_result
         result = {'location': []}
         ip = await self.get_ip_by_domain(domain)
         if ip:
             tasks = [
-                asyncio.ensure_future(
-                    self.retry_sync_func(whois.whois, url=domain, flags=whois.NICClient.WHOIS_RECURSE)
-                ),
-                asyncio.ensure_future(
-                    self.retry_sync_func(whois.whois, url=ip, flags=whois.NICClient.WHOIS_RECURSE)
-                ),
+                self.retry_sync_func(whois.whois, url=domain, flags=whois.NICClient.WHOIS_RECURSE),
+                self.retry_sync_func(whois.whois, url=ip, flags=whois.NICClient.WHOIS_RECURSE),
             ]
             whois_results = await asyncio.gather(*tasks)
             for whois_res in whois_results:
                 result['location'].extend(await self.get_location_info_from_whois(whois_res))
-        cached_result['result'] = result
-        event = cached_result.pop('event', None)
-        if event:
-            event.set()
+        await self._cache.set(domain, result)
         return result
 
     @async_wrap
