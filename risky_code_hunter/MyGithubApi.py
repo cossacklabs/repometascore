@@ -1,3 +1,8 @@
+import asyncio
+import datetime
+import os
+import random
+import time
 from typing import Dict, List
 
 import aiohttp
@@ -6,100 +11,177 @@ from .AbstractAPI import AbstractAPI
 from .HTTP_METHOD import HTTP_METHOD
 
 
+class BadToken(Exception):
+    pass
+
+
+class NoTokensLeft(Exception):
+    pass
+
+
+class TokenExceededRateLimit(Exception):
+    pass
+
+
+class PageNotFound(Exception):
+    pass
+
+
 class GithubAPI(AbstractAPI):
-    auth_token: str
-    auth_token_check: bool
-    EXCEEDED_MSG = 'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.'
+    EXCEEDED_RATE_LIMIT_MSG = 'API rate limit exceeded for user ID'
+    EXCEEDED_SECONDARY_MSG = 'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.'
+    auth_tokens: Dict[str, Dict]
+    auth_tokens_checked: bool
+    check_auth_token_lock: asyncio.Lock
+    __print_timestamps: Dict
+    ALLOWED_TIME_TO_WAIT_DEFAULT: float = 12000.0
+    allowed_time_to_wait: float
 
     def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None, verbose: int = 0):
         super().__init__(session=session, config=config, verbose=verbose)
-        self.auth_token = f"token {config.get('git_token', 'ghp_token')}"
-        self.auth_token_check = False
+        self.auth_tokens = {}
+        git_tokens = config.get('git_tokens', [])
+        for git_token in git_tokens:
+            self.auth_tokens[f'token {git_token}'] = \
+                {"is_good": False, "reset_time": -1, "is_full": False, "event": None}
+        self.auth_tokens_checked = False
+        self.check_auth_token_lock = asyncio.Lock()
+        self.__print_timestamps = {}
+        self.allowed_time_to_wait = int(os.environ.get('ALLOWED_TIME_TO_WAIT', self.ALLOWED_TIME_TO_WAIT_DEFAULT))
         return
 
-    async def initializeTokens(self) -> bool:
-        return await self.checkAuthTokenRetries(self.max_retries)
+    async def initialize_tokens(self) -> bool:
+        return await self.check_auth_tokens()
 
-    def createResponseHandlers(self) -> Dict:
+    def create_response_handlers(self) -> Dict:
         result = {
-            self.UNPREDICTED_RESPONSE_HANDLER_INDEX: self.handleUnpredictedResponse,
-            200: self.handleResponse200,
-            401: self.handleResponse401,
-            403: self.handleResponse403,
-            404: self.handleResponse404
+            self.UNPREDICTED_RESPONSE_HANDLER_INDEX: self.handle_unpredicted_response,
+            200: self.handle_response_200,
+            202: self.handle_response_202,
+            401: self.handle_response_401,
+            403: self.handle_response_403,
+            404: self.handle_response_404,
+            429: self.handle_response_429,
+            502: self.handle_response_502,
+            503: self.handle_response_503
         }
         return result
 
-    async def handleResponse202(self, **kwargs):
+    async def handle_response_202(self, **kwargs):
         return True
 
-    async def handleResponse401(self, resp, **kwargs):
-        raise Exception(
-            "Your github token is not valid. Github returned err validation code!\n"
+    async def handle_response_401(self, resp, **kwargs):
+        raise BadToken(
+            "Your GitHub token is not valid. Github returned err validation code!\n"
             f"Status code: {resp.status}\n"
             f"Response:\n{await resp.json()}"
         )
 
-    async def handleResponse403(self, resp, **kwargs):
+    async def handle_response_403(self, resp, **kwargs):
         resp_json = await resp.json()
-        if isinstance(resp_json, dict) and resp_json.get('message', str()) == self.EXCEEDED_MSG:
-            return True
-        await self.handleUnpredictedResponse(resp=resp, **kwargs)
+        if isinstance(resp_json, dict):
+            if resp_json.get('message', "") == self.EXCEEDED_SECONDARY_MSG:
+                return True
+            elif self.EXCEEDED_RATE_LIMIT_MSG in resp_json.get('message', ""):
+                raise TokenExceededRateLimit(resp_json.get('message', ""))
+        await self.handle_unpredicted_response(resp=resp, **kwargs)
         return False
 
-    async def handleResponse404(self, url, resp, **kwargs):
-        raise Exception(
+    async def handle_response_404(self, url, resp, **kwargs):
+        raise PageNotFound(
             "Error, 404 status!\n"
-            "Maybe your github repository url is wrong!\n"
+            "Maybe your GitHub repository url is wrong!\n"
             f"Cannot find info on such url: {url}\n"
             f"Status code: {resp.status}\n"
             f"Response:\n{await resp.json()}"
         )
 
-    async def checkAuthToken(self) -> bool:
-        resp = await self.request(
-            method=HTTP_METHOD.GET,
-            url='https://api.github.com',
-            headers={
-                'Authorization': self.auth_token,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        )
-        # Currently, this piece of the code is redundant
-        # As we successfully will get response only from
-        # 200 OK status code
-        if resp.status == 401:
-            raise Exception(
-                "Your github token is not valid. Github returned err validation code!\n"
-                f"Status code: {resp.status}\n"
-                f"Response:\n{await resp.json()}"
+    async def handle_response_429(self, resp, **kwargs):
+        resp_json = await resp.json()
+        raise TokenExceededRateLimit(f"{resp_json}")
+
+    async def handle_response_502(self, **kwargs):
+        return True
+
+    async def handle_response_503(self, **kwargs):
+        return True
+
+    # Enter Lock
+    # if token exist in tokens_dict -> if token is full and its reset time is in future -> return True
+    #   -> get event from token dict -> if event is exists -> somebody is already requesting
+    #                                   -> if event is not exist -> create event and add it to token dict
+    # Exit Lock
+    # if somebody is already requesting -> wait to event to be set and return result
+    # else -> Usual logic
+    async def check_auth_token(self, token) -> bool:
+        is_already_requesting: bool
+        async with self.check_auth_token_lock.acquire():
+            if token in self.auth_tokens:
+                if self.auth_tokens[token]['is_full'] and self.auth_tokens[token]['reset_time'] > int(time.time()):
+                    return True
+                event: asyncio.Event = self.auth_tokens[token].get('event')
+                if isinstance(event, asyncio.Event):
+                    is_already_requesting = True
+            else:
+                self.auth_tokens[token] = {"isGood": False, "reset": -1, "isFull": False, "event": None}
+            if not is_already_requesting:
+                event = asyncio.Event()
+                self.auth_tokens[token]["event"] = event
+        if is_already_requesting:
+            await event.wait()
+            return token in self.auth_tokens
+        try:
+            resp = await self.request(
+                method=HTTP_METHOD.GET,
+                url='https://api.github.com/rate_limit',
+                headers={
+                    'Authorization': token,
+                },
+                auth_check=True
             )
-        elif resp.status == 200:
-            self.auth_token_check = True
+        except BadToken:
+            self.auth_tokens.pop(token, None)
+            event.set()
+            return False
+        except Exception as exception:
+            self.auth_tokens[token]['event'] = None
+            event.set()
+            raise exception
+
+        if resp.status == 200:
+            resp_json = await resp.json()
+            self.auth_tokens[token]['is_good'] = True
+            self.auth_tokens[token]['reset_time'] = resp_json['rate']['reset']
+            self.auth_tokens[token]['is_full'] = resp_json['rate']['remaining'] <= 0
+            self.auth_tokens[token]['event'] = None
+            event.set()
             return True
+        else:
+            # some other error occurred
+            # currently redundant part of the code
+            self.auth_tokens.pop(token, None)
+            event.set()
+            return False
 
-        # some other error occurred
-        # currently redundant part of the code
-        self.auth_token_check = False
-        return False
-
-    async def checkAuthTokenRetries(self, retries_count: int = 0) -> bool:
-        count = 0
-        if retries_count <= 0:
-            retries_count = self.max_retries
-        while not self.auth_token_check and count < retries_count:
-            self.print("Checking Auth token!")
-            await self.checkAuthToken()
-            count += 1
-            if not self.auth_token_check:
-                self.print(f"Retry one more time! Try count: {count}")
-            self.print("Auth Token is valid!")
-        return self.auth_token_check
+    async def check_auth_tokens(self, ) -> bool:
+        if self.auth_tokens_checked:
+            return True
+        self.print("Checking Auth tokens!")
+        for index, token in enumerate(self.auth_tokens.copy()):
+            if self.auth_tokens[token]['is_good']:
+                continue
+            if not await self.check_auth_token(token):
+                self.print(f"Token #{index + 1} is not valid!")
+        if len(self.auth_tokens) == 0:
+            raise BadToken("All your github tokens are not valid!")
+        self.print("Auth Tokens are valid!")
+        self.auth_tokens_checked = True
+        return True
 
     # get list of all contributors:
     # GitHub API expected data:
     # https://docs.github.com/en/rest/repos/repos#list-repository-contributors
-    async def getRepoContributors(self, repo_author, repo_name, anon=0) -> List:
+    async def get_repo_contributors(self, repo_author, repo_name, anon=0) -> List:
         per_page = 100
         page_num = 1
         contributors_json = []
@@ -113,10 +195,6 @@ class GithubAPI(AbstractAPI):
                 method=HTTP_METHOD.GET,
                 url=f"https://api.github.com/repos/{repo_author}/{repo_name}/contributors",
                 params=params,
-                headers={
-                    'Authorization': self.auth_token,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
             )
             response_json = await response.json()
             if len(response_json) == 0:
@@ -130,14 +208,10 @@ class GithubAPI(AbstractAPI):
     # get contributors with stats (only top100)
     # expected data
     # https://docs.github.com/en/rest/metrics/statistics#get-all-contributor-commit-activity
-    async def getRepoContributorsStats(self, repo_author, repo_name) -> List:
+    async def get_repo_contributors_stats(self, repo_author, repo_name) -> List:
         contributors_resp = await self.request(
             method=HTTP_METHOD.GET,
             url=f"https://api.github.com/repos/{repo_author}/{repo_name}/stats/contributors",
-            headers={
-                'Authorization': self.auth_token,
-                'Accept': 'application/vnd.github.v3+json'
-            }
         )
         contributors_json = await contributors_resp.json()
         return contributors_json
@@ -146,7 +220,7 @@ class GithubAPI(AbstractAPI):
     # returns only one commit
     # expected data
     # https://docs.github.com/en/rest/commits/commits#list-commits
-    async def getRepoCommitByAuthor(self, repo_author, repo_name, author, commit_num, per_page) -> List:
+    async def get_repo_commit_by_author(self, repo_author, repo_name, author, commit_num, per_page) -> List:
         params = {
             'author': author,
             'per_page': per_page,
@@ -156,10 +230,6 @@ class GithubAPI(AbstractAPI):
             method=HTTP_METHOD.GET,
             url=f"https://api.github.com/repos/{repo_author}/{repo_name}/commits",
             params=params,
-            headers={
-                'Authorization': self.auth_token,
-                'Accept': 'application/vnd.github.v3+json'
-            }
         )
         commit_info = await commit_info_resp.json()
         return commit_info
@@ -167,14 +237,124 @@ class GithubAPI(AbstractAPI):
     # get user profile information
     # expected data
     # https://docs.github.com/en/rest/users/users#get-a-user
-    async def getUserProfileInfo(self, user_url) -> Dict:
-        profile_info_resp = await self.request(
-            method=HTTP_METHOD.GET,
-            url=user_url,
-            headers={
-                'Authorization': self.auth_token,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        )
-        profile_info = await profile_info_resp.json()
+    async def get_user_profile_info(self, user_url) -> Dict:
+        try:
+            profile_info_resp = await self.request(
+                method=HTTP_METHOD.GET,
+                url=user_url,
+            )
+            profile_info = await profile_info_resp.json()
+        except PageNotFound:
+            return {}
         return profile_info
+
+    # get companies (organizations) list of specific user
+    # get companies (organizations) list of specific user
+    # expected data
+    # https://docs.github.com/en/rest/orgs/orgs#list-organizations-for-a-user
+    async def get_user_companies_info(self, user_url) -> List[Dict]:
+        companies_resp = await self.request(
+            method=HTTP_METHOD.GET,
+            url=user_url + "/orgs",
+        )
+        companies = await companies_resp.json()
+        tasks = []
+        for company in companies:
+            tasks.append(self.get_company_info(company['url']))
+        companies_info = list(await asyncio.gather(*tasks))
+        return companies_info
+
+    # get company (organization) information
+    # expected data
+    # https://docs.github.com/en/rest/orgs/orgs#get-an-organization
+    async def get_company_info(self, company_url) -> Dict:
+        try:
+            # set timeout to ALLOWED_TIME_TO_WAIT + 120
+            # as because if there is token expiration - we need to await some time
+            # before getting a new response after token reset
+            # by default we are waiting 200 minutes, as it is a little bit
+            # of overkill, and can be considered as infinity by that time
+            # should be set to much lower value in future updates
+            is_result_present, cached_result = await self._cache.get_and_await(
+                company_url, create_new_awaitable=True, timeout=self.allowed_time_to_wait
+            )
+        except asyncio.TimeoutError:
+            is_result_present = False
+        if is_result_present:
+            return cached_result
+        company_resp = await self.request(
+            method=HTTP_METHOD.GET,
+            url=company_url,
+        )
+        company_info = await company_resp.json()
+        await self._cache.set(company_url, company_info)
+        return company_info
+
+    async def get_random_token(self) -> str:
+        remaining_tokens = []
+        is_greater_than_allowed_time = True
+        time_of_token_reset = 2**64
+        for token, token_info in self.auth_tokens.copy().items():
+            if token_info['is_full']:
+                token_reset_time = token_info.get('reset_time', 0)
+                if token_reset_time >= int(time.time()):
+                    is_greater_than_allowed_time = \
+                        is_greater_than_allowed_time and (int(time.time()) - token_reset_time) > \
+                        self.allowed_time_to_wait
+                    time_of_token_reset = min(time_of_token_reset, token_reset_time)
+                else:
+                    self.auth_tokens[token]['is_full'] = False
+                    remaining_tokens.append(token)
+            else:
+                remaining_tokens.append(token)
+        if len(remaining_tokens) == 0:
+            if is_greater_than_allowed_time:
+                print("Timeout is too big")
+                raise NoTokensLeft("Every token is on long cooldown right now!")
+            # Let's wait an additional 1.1 seconds as GitHub sometimes would not allow
+            # To run at the same time with token reset
+            sleep_duration = max(time_of_token_reset - int(time.time()), 1.0) + 1.1
+            # We are using 5 seconds to wait between prints, as it seems like optimal value between such prints
+            self.print(
+                f"Let's wait till {datetime.datetime.fromtimestamp(time_of_token_reset)} and then back to work!",
+                f"Requests to GitHub will not be done in the next {datetime.timedelta(seconds=sleep_duration)} seconds",
+                signature="Let's wait till",
+                time_to_wait=5.0
+            )
+            await asyncio.sleep(sleep_duration)
+            # Randomization in the next method will allow us to make requests at slightly different time.
+            await self.request_limit_timeout_and_await(5)
+            # We are using 5 seconds to wait between prints, as it seems like optimal value between such prints
+            self.print("GitHub's requests are running again!", signature="Running Again", time_to_wait=5.0)
+            return await self.get_random_token()
+        return random.choice(remaining_tokens)
+
+    async def request(self, method, url, params=None, data=None, headers=None,
+                      auth_check=False) -> aiohttp.ClientResponse:
+        if auth_check:
+            result = await super().request(method=method, url=url, params=params, data=data, headers=headers)
+            return result
+        if not isinstance(headers, Dict):
+            headers = {}
+        headers['Accept'] = 'application/vnd.github.v3+json'
+        while True:
+            headers['Authorization'] = await self.get_random_token()
+            try:
+                result = await super().request(method=method, url=url, params=params, data=data, headers=headers)
+                return result
+            except TokenExceededRateLimit:
+                await self.check_auth_token(headers['Authorization'])
+                continue
+
+    def print(self, *args, signature=None, time_to_wait: float = 1.0, **kwargs):
+        if isinstance(signature, str):
+            if signature in self.__print_timestamps:
+                if (time.time() - self.__print_timestamps[signature]['last_print']) < \
+                        self.__print_timestamps[signature]['time_to_wait']:
+                    return
+            else:
+                self.__print_timestamps[signature] = {}
+            self.__print_timestamps[signature]['last_print'] = time.time()
+            self.__print_timestamps[signature]['time_to_wait'] = time_to_wait
+        super().print(*args, **kwargs)
+        return
