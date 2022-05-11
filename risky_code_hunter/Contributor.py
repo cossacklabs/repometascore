@@ -139,6 +139,11 @@ class Contributor:
 
         await self.fill_with_profile_info(request_manager.githubAPI)
         blog_domain: str = request_manager.domainInfo.get_domain(self.blog)
+        # we are looking for twitter URLs with  `#!`
+        # There was at least one GitHub account with "twitter.com/#!/nrg8000" (for example)
+        # In fact those "#!" may be an unlimited number,
+        # that's why we need to clean those subpaths in the path before the account name
+        # https://twitter/#!/username -> /#!/#!/username/ -> #!/#!/username -> username
         if blog_domain == "twitter.com":
             try:
                 index = 0
