@@ -138,7 +138,7 @@ class TwitterAPI(AbstractAPI):
     # more info about this twitter graphql API:
     # https://stackoverflow.com/questions/65502651/graphql-value-in-twitter-api
     async def get_twitter_account_info(self, twitter_username) -> Dict:
-        is_result_present, cached_result = await self._await_from_cache(twitter_username)
+        is_result_present, cached_result = await self._cache.get_and_await(twitter_username, create_new_awaitable=True)
         if is_result_present:
             return cached_result
         url = 'https://twitter.com/i/api/graphql/Bhlf1dYJ3bYCKmLfeEQ31A/UserByScreenName'
@@ -156,5 +156,5 @@ class TwitterAPI(AbstractAPI):
         )}
         response = await self.request(method=HTTP_METHOD.GET, url=url, headers=headers, params=parameters)
         result = await response.json()
-        await self._save_to_cache(twitter_username, result)
+        await self._cache.set(twitter_username, result)
         return result

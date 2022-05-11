@@ -5,3 +5,4 @@ from .RiskyCodeHunter import RiskyCodeHunter
 from .RiskyRepo import Repo
 from .TriggeredRule import TriggeredRule
 from .TwitterAPI import TwitterAPI
+from .cache import Cache
