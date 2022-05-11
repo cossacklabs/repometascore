@@ -13,8 +13,8 @@ class AbstractAPI(ABC):
     verbose: int
     __session: aiohttp.ClientSession
     _response_handlers: Dict
-    _results_cache: Dict
-    _results_cache_lock: asyncio.Lock
+    __results_cache: Dict
+    __results_cache_lock: asyncio.Lock
     UNPREDICTED_RESPONSE_HANDLER_INDEX = -1
 
     def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None, verbose: int = 0):
@@ -32,7 +32,7 @@ class AbstractAPI(ABC):
         self.handle_unpredicted_response = self._response_handlers.pop(
             self.UNPREDICTED_RESPONSE_HANDLER_INDEX, self.handle_unpredicted_response
         )
-        self._results_cache = {}
+        self.__results_cache = {}
 
     @abstractmethod
     def create_response_handlers(self) -> Dict:
@@ -54,33 +54,72 @@ class AbstractAPI(ABC):
     async def handle_response_200(self, **kwargs):
         return False
 
-    def _save_to_cache(self, key: Any, some_result: Any):
-        self._results_cache[key] = some_result
+    def __save_to_cache(self, key: Any, new_value: Any):
+        self.__results_cache[key] = new_value
         return
 
-    async def _await_from_cache(self, key: Any) -> Tuple[bool, Dict]:
-        is_result_already_present = False
-        async with self._results_cache_lock.acquire():
-            cached_result = self._get_from_cache(key)
+    def __get_from_cache(self, key: Any) -> Any:
+        return self.__results_cache.get(key)
+
+    def __pop_from_cache(self, key: Any, default: Any = None) -> Any:
+        return self.__results_cache.pop(key, default)
+
+    # Enter lock
+    # if key is present in cache -> wait for event to be set if it is present ->
+    #   -> return value from cache dict with `is_result_already_present` flag as True
+    # if there is no key ->
+    #   -> if `create_new_awaitable` is True ->
+    #       -> will create an event and save it to cache dict -> Exit lock ->
+    #           -> return `is_result_already_present` as False and `None` as a result ->
+    #               -> caller MUST call `_save_to_cache` when he will get a result
+    #   -> elif `create_new_awaitable` is False -> Exit lock ->
+    #       -> return `is_result_already_present` as False and `None` as a result
+    async def _await_from_cache(self, key: Any, create_new_awaitable=False) -> Tuple[bool, Any]:
+        async with self.__results_cache_lock.acquire():
+            is_result_already_present = False
+            cached_result = self.__get_from_cache(key)
             if cached_result:
                 event: asyncio.Event = cached_result.get('event')
                 is_result_already_present = True
-            else:
+            elif create_new_awaitable:
                 event = asyncio.Event()
                 cached_result = {'event': event}
-                self._save_to_cache(key, cached_result)
+                self.__save_to_cache(key, cached_result)
         if is_result_already_present:
             if event:
                 await event.wait()
-            return is_result_already_present, cached_result
-        return is_result_already_present, cached_result
+            return is_result_already_present, cached_result.get('cached_result')
+        return is_result_already_present, None
 
-    def _get_from_cache(self, key: Any) -> Any:
-        return self._results_cache.get(key)
-
-    def _remove_from_cache(self, key):
-        self._results_cache.pop(key, None)
+    # Enter lock
+    # if key is already present -> write `new_value` into dict -> if event is present -> set event
+    # if there is no key -> create it -> write `new_value` into dict
+    async def _save_to_cache(self, key: Any, new_value: Any):
+        async with self.__results_cache_lock.acquire():
+            cached_result = self.__get_from_cache(key)
+            if cached_result:
+                cached_result['cached_result'] = new_value
+                event = cached_result.pop('event', None)
+                if event:
+                    event.set()
+            else:
+                cached_result = {'cached_result': new_value}
+                self.__save_to_cache(key, cached_result)
         return
+
+    # Enter lock
+    # pop key from cache dict -> if it was present -> rewrite result to None ->
+    #   -> if event was present -> set event
+    async def _pop_from_cache(self, key: Any, default: Any = None):
+        async with self.__results_cache_lock.acquire():
+            cached_result = self.__pop_from_cache(key, default)
+            if cached_result:
+                cached_result['cached_result'] = None
+                event = cached_result.pop('event', None)
+                if event:
+                    event.set()
+        return
+
 
     async def request(self, method, url, params=None, data=None, headers=None) -> aiohttp.ClientResponse:
         retry = 0
