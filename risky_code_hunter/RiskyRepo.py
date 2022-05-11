@@ -84,7 +84,7 @@ class Repo:
         for contributor in contributors_json:
             contributor_obj = Contributor(contributor)
             contributors_info.append(contributor_obj)
-            if contributor['type_verbal'] != "Anonymous":
+            if contributor['type'] != "Anonymous":
                 contributors_per_login[contributor_obj.login] = contributor_obj
 
         # get contributors with stats (only top100)

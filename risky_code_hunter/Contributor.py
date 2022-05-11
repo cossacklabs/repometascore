@@ -1,5 +1,6 @@
 import asyncio
 from typing import List, Dict, Set
+from urllib.parse import urlparse
 
 from .DomainInfo import DomainInfo
 from .MyGithubApi import GithubAPI
@@ -22,7 +23,7 @@ class Contributor:
     # detailed info from profile
     location: Set[str]
     emails: Set[str]
-    twitter_username: str
+    twitter_username: Set[str]
     names: Set[str]
     company: str
     blog: str
@@ -46,7 +47,7 @@ class Contributor:
         self.delta = int()
         self.location = set()
         self.emails = set()
-        self.twitter_username = str()
+        self.twitter_username = set()
         self.names = set()
         self.company = str()
         self.blog = str()
@@ -104,11 +105,11 @@ class Contributor:
 
         twitter_username = input_dict.get('twitter')
         if isinstance(twitter_username, str):
-            self.twitter_username = twitter_username
+            self.twitter_username.add(twitter_username)
 
         twitter_username = input_dict.get('twitter_username')
         if isinstance(twitter_username, str):
-            self.twitter_username = twitter_username
+            self.twitter_username.add(twitter_username)
 
         name = input_dict.get('name')
         if isinstance(name, str):
@@ -136,11 +137,29 @@ class Contributor:
         if not (isinstance(self.url, str) and self.url):
             return self
 
-        await self.fillWithProfileInfo(requestManager.githubAPI)
+        await self.fill_with_profile_info(request_manager.githubAPI)
+        blog_domain: str = request_manager.domainInfo.get_domain(self.blog)
+        # we are looking for twitter URLs with  `#!`
+        # There was at least one GitHub account with "twitter.com/#!/nrg8000" (for example)
+        # In fact those "#!" may be an unlimited number,
+        # that's why we need to clean those subpaths in the path before the account name
+        # https://twitter/#!/username -> /#!/#!/username/ -> #!/#!/username -> username
+        if blog_domain == "twitter.com":
+            try:
+                index = 0
+                twitter_username = ""
+                while index == 0 or twitter_username == "#!":
+                    twitter_username = str(urlparse(self.blog).path).strip('/').split('/')[index]
+                    index += 1
+                self.twitter_username.add(twitter_username)
+                self.blog = ""
+            except IndexError:
+                pass
         tasks = [
-            asyncio.ensure_future(self.fill_with_commits_info(repo_author, repo_name, request_manager.githubAPI)),
-            asyncio.ensure_future(self.fill_with_twitter_info(request_manager.twitterAPI)),
-            asyncio.ensure_future(self.fill_with_blog_url_info(request_manager.domainInfo)),
+            self.fill_with_commits_info(repo_author, repo_name, request_manager.githubAPI),
+            self.fill_with_companies_info(request_manager.githubAPI),
+            self.fill_with_twitter_info(request_manager.twitterAPI),
+            self.fill_with_blog_url_info(request_manager.domainInfo),
         ]
         await asyncio.gather(*tasks)
         return self
@@ -182,11 +201,14 @@ class Contributor:
         self.add_value(contributor_info)
         return
 
-    async def fillWithProfileInfo(self, githubAPI):
+    async def fill_with_companies_info(self, github_api):
         if not (isinstance(self.url, str) and self.url):
             return
-        contributor_info = await githubAPI.getUserProfileInfo(self.url)
-        self.addValue(contributor_info)
+        companies_info = await github_api.get_user_companies_info(self.url)
+        for company_info in companies_info:
+            location = company_info.get('location')
+            if isinstance(location, str):
+                self.location.add(location)
         return
 
     def get_json(self) -> Dict:
@@ -196,6 +218,7 @@ class Contributor:
         result['emails'] = list(self.emails)
         result['location'] = list(self.location)
         result['bio'] = list(self.bio)
+        result['twitter_username'] = list(self.twitter_username)
 
         triggered_rules = []
         for triggeredRule in self.triggeredRules:
