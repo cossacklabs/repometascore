@@ -34,7 +34,8 @@ class GithubAPI(AbstractAPI):
     auth_tokens_checked: bool
     check_auth_token_lock: asyncio.Lock
     __print_timestamps: Dict
-    ALLOWED_TIME_TO_WAIT: int
+    ALLOWED_TIME_TO_WAIT_DEFAULT: float = 12000.0
+    allowed_time_to_wait: float
 
     def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None, verbose: int = 0):
         super().__init__(session=session, config=config, verbose=verbose)
@@ -46,7 +47,7 @@ class GithubAPI(AbstractAPI):
         self.auth_tokens_checked = False
         self.check_auth_token_lock = asyncio.Lock()
         self.__print_timestamps = {}
-        self.ALLOWED_TIME_TO_WAIT = int(os.environ.get('ALLOWED_TIME_TO_WAIT', 12000))
+        self.allowed_time_to_wait = int(os.environ.get('ALLOWED_TIME_TO_WAIT', self.ALLOWED_TIME_TO_WAIT_DEFAULT))
         return
 
     async def initialize_tokens(self) -> bool:
@@ -271,8 +272,11 @@ class GithubAPI(AbstractAPI):
             # set timeout to ALLOWED_TIME_TO_WAIT + 120
             # as because if there is token expiration - we need to await some time
             # before getting a new response after token reset
+            # by default we are waiting 200 minutes, as it is a little bit
+            # of overkill, and can be considered as infinity by that time
+            # should be set to much lower value in future updates
             is_result_present, cached_result = await self._cache.get_and_await(
-                company_url, create_new_awaitable=True, timeout=self.ALLOWED_TIME_TO_WAIT
+                company_url, create_new_awaitable=True, timeout=self.allowed_time_to_wait
             )
         except asyncio.TimeoutError:
             is_result_present = False
@@ -296,7 +300,7 @@ class GithubAPI(AbstractAPI):
                 if token_reset_time >= int(time.time()):
                     is_greater_than_allowed_time = \
                         is_greater_than_allowed_time and (int(time.time()) - token_reset_time) > \
-                        self.ALLOWED_TIME_TO_WAIT
+                        self.allowed_time_to_wait
                     time_of_token_reset = min(time_of_token_reset, token_reset_time)
                 else:
                     self.auth_tokens[token]['is_full'] = False
