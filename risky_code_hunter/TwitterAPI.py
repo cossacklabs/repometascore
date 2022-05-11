@@ -1,6 +1,8 @@
-import aiohttp
+import asyncio
 import json
 from typing import Dict
+
+import aiohttp
 
 from .AbstractAPI import AbstractAPI
 from .HTTP_METHOD import HTTP_METHOD
@@ -10,34 +12,35 @@ class TwitterAPI(AbstractAPI):
     twitter_guest_token: str
 
     def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None, verbose: int = 0):
-        super().__init__(session=session, config=config)
+        super().__init__(session=session, config=config, verbose=verbose)
         self.twitter_guest_token = str()
 
-    def createResponseHandlers(self) -> Dict:
+    def create_response_handlers(self) -> Dict:
         result = {
-            self.UNPREDICTED_RESPONSE_HANDLER_INDEX: self.handleUnpredictedResponse,
-            200: self.handleResponse200,
-            401: self.handleResponse401,
-            404: self.handleResponse404
+            self.UNPREDICTED_RESPONSE_HANDLER_INDEX: self.handle_unpredicted_response,
+            200: self.handle_response_200,
+            401: self.handle_response_401,
+            404: self.handle_response_404,
+            429: self.handle_response_429
         }
         return result
 
-    async def initializeTokens(self) -> bool:
+    async def initialize_tokens(self) -> bool:
         if self.twitter_guest_token:
             return True
         self.print("Getting twitter guest token")
-        self.twitter_guest_token = await self.getTwitterGuestToken()
+        self.twitter_guest_token = await self.get_twitter_guest_token()
         self.print("Successfully retrieved twitter guest token")
         return True
 
-    async def handleResponse401(self, resp, **kwargs):
+    async def handle_response_401(self, resp, **kwargs):
         raise Exception(
             "Your guest token is not valid. Twitter returned err validation code!\n"
             f"Status code: {resp.status}\n"
             f"Response:\n{await resp.text()}"
         )
 
-    async def handleResponse404(self, url, resp, **kwargs):
+    async def handle_response_404(self, url, resp, **kwargs):
         raise Exception(
             "Error, 404 status!\n"
             f"Cannot find info on such url: {url}\n"
@@ -45,13 +48,16 @@ class TwitterAPI(AbstractAPI):
             f"Response:\n{await resp.text()}"
         )
 
+    async def handle_response_429(self, resp, **kwargs):
+        return True
+
     # To get Twitter guest token
     # we need to make request on special url and get + activate our
     # freshly created guest token. It has expiration time, fewer than 24 hours,
     # but greater than 8 hours. Thus, we can work with one guest token
     # Response structure: json
     # { 'guest_token': GUEST_TOKEN }
-    async def getTwitterGuestToken(self) -> str:
+    async def get_twitter_guest_token(self) -> str:
         response = await self.request(
             method=HTTP_METHOD.POST,
             url='https://api.twitter.com/1.1/guest/activate.json',
@@ -132,7 +138,16 @@ class TwitterAPI(AbstractAPI):
     # }
     # more info about this twitter graphql API:
     # https://stackoverflow.com/questions/65502651/graphql-value-in-twitter-api
-    async def getTwitterAccountInfo(self, twitter_username) -> Dict:
+    async def get_twitter_account_info(self, twitter_username) -> Dict:
+        try:
+            # set timeout to 120
+            is_result_present, cached_result = await self._cache.get_and_await(
+                twitter_username, create_new_awaitable=True, timeout=120
+            )
+        except asyncio.TimeoutError:
+            is_result_present = False
+        if is_result_present:
+            return cached_result
         url = 'https://twitter.com/i/api/graphql/Bhlf1dYJ3bYCKmLfeEQ31A/UserByScreenName'
         headers = {
             'authorization': 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs'
@@ -148,4 +163,5 @@ class TwitterAPI(AbstractAPI):
         )}
         response = await self.request(method=HTTP_METHOD.GET, url=url, headers=headers, params=parameters)
         result = await response.json()
+        await self._cache.set(twitter_username, result)
         return result
