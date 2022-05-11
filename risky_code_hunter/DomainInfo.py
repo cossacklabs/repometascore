@@ -55,7 +55,7 @@ class DomainInfo(AbstractAPI):
 
     async def get_domain_info(self, domain: str) -> Dict:
         domain = self.get_domain(domain)
-        is_result_present, cached_result = await self._await_from_cache(domain)
+        is_result_present, cached_result = await self._cache.get_and_await(domain, create_new_awaitable=True)
         if is_result_present:
             return cached_result
         result = {'location': []}
@@ -68,7 +68,7 @@ class DomainInfo(AbstractAPI):
             whois_results = await asyncio.gather(*tasks)
             for whois_res in whois_results:
                 result['location'].extend(await self.get_location_info_from_whois(whois_res))
-        await self._save_to_cache(domain, result)
+        await self._cache.set(domain, result)
         return result
 
     @async_wrap

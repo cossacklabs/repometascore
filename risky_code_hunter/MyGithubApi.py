@@ -265,7 +265,9 @@ class GithubAPI(AbstractAPI):
     # expected data
     # https://docs.github.com/en/rest/orgs/orgs#get-an-organization
     async def get_company_info(self, company_url) -> Dict:
-        is_result_already_present, cached_result = await self._await_from_cache(company_url)
+        is_result_already_present, cached_result = await self._cache.get_and_await(
+            company_url, create_new_awaitable=True
+        )
         if is_result_already_present:
             return cached_result
         company_resp = await self.request(
@@ -273,7 +275,7 @@ class GithubAPI(AbstractAPI):
             url=company_url,
         )
         company_info = await company_resp.json()
-        await self._save_to_cache(company_url, company_info)
+        await self._cache.set(company_url, company_info)
         return company_info
 
     async def get_random_token(self) -> str:

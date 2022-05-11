@@ -1,9 +1,11 @@
 import asyncio
 import random
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Tuple
+from typing import Dict
 
 import aiohttp
+
+from .cache import Cache
 
 
 class AbstractAPI(ABC):
@@ -13,9 +15,8 @@ class AbstractAPI(ABC):
     verbose: int
     __session: aiohttp.ClientSession
     _response_handlers: Dict
-    __results_cache: Dict
-    __results_cache_lock: asyncio.Lock
     UNPREDICTED_RESPONSE_HANDLER_INDEX = -1
+    _cache: Cache
 
     def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None, verbose: int = 0):
         if config is None:
@@ -32,7 +33,6 @@ class AbstractAPI(ABC):
         self.handle_unpredicted_response = self._response_handlers.pop(
             self.UNPREDICTED_RESPONSE_HANDLER_INDEX, self.handle_unpredicted_response
         )
-        self.__results_cache = {}
 
     @abstractmethod
     def create_response_handlers(self) -> Dict:
@@ -53,73 +53,6 @@ class AbstractAPI(ABC):
 
     async def handle_response_200(self, **kwargs):
         return False
-
-    def __save_to_cache(self, key: Any, new_value: Any):
-        self.__results_cache[key] = new_value
-        return
-
-    def __get_from_cache(self, key: Any) -> Any:
-        return self.__results_cache.get(key)
-
-    def __pop_from_cache(self, key: Any, default: Any = None) -> Any:
-        return self.__results_cache.pop(key, default)
-
-    # Enter lock
-    # if key is present in cache -> wait for event to be set if it is present ->
-    #   -> return value from cache dict with `is_result_already_present` flag as True
-    # if there is no key ->
-    #   -> if `create_new_awaitable` is True ->
-    #       -> will create an event and save it to cache dict -> Exit lock ->
-    #           -> return `is_result_already_present` as False and `None` as a result ->
-    #               -> caller MUST call `_save_to_cache` when he will get a result
-    #   -> elif `create_new_awaitable` is False -> Exit lock ->
-    #       -> return `is_result_already_present` as False and `None` as a result
-    async def _await_from_cache(self, key: Any, create_new_awaitable=False) -> Tuple[bool, Any]:
-        async with self.__results_cache_lock.acquire():
-            is_result_already_present = False
-            cached_result = self.__get_from_cache(key)
-            if cached_result:
-                event: asyncio.Event = cached_result.get('event')
-                is_result_already_present = True
-            elif create_new_awaitable:
-                event = asyncio.Event()
-                cached_result = {'event': event}
-                self.__save_to_cache(key, cached_result)
-        if is_result_already_present:
-            if event:
-                await event.wait()
-            return is_result_already_present, cached_result.get('cached_result')
-        return is_result_already_present, None
-
-    # Enter lock
-    # if key is already present -> write `new_value` into dict -> if event is present -> set event
-    # if there is no key -> create it -> write `new_value` into dict
-    async def _save_to_cache(self, key: Any, new_value: Any):
-        async with self.__results_cache_lock.acquire():
-            cached_result = self.__get_from_cache(key)
-            if cached_result:
-                cached_result['cached_result'] = new_value
-                event = cached_result.pop('event', None)
-                if event:
-                    event.set()
-            else:
-                cached_result = {'cached_result': new_value}
-                self.__save_to_cache(key, cached_result)
-        return
-
-    # Enter lock
-    # pop key from cache dict -> if it was present -> rewrite result to None ->
-    #   -> if event was present -> set event
-    async def _pop_from_cache(self, key: Any, default: Any = None):
-        async with self.__results_cache_lock.acquire():
-            cached_result = self.__pop_from_cache(key, default)
-            if cached_result:
-                cached_result['cached_result'] = None
-                event = cached_result.pop('event', None)
-                if event:
-                    event.set()
-        return
-
 
     async def request(self, method, url, params=None, data=None, headers=None) -> aiohttp.ClientResponse:
         retry = 0
