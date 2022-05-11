@@ -251,17 +251,17 @@ class Contributor:
         if not (isinstance(self.blog, str) and self.blog):
             return
         blog_domain = domain_info.get_domain(self.blog)
-        if blog_domain[-8:] == "about.me":
+        if blog_domain[-(len("about.me")):] == "about.me":
             return
             # TODO about.me retrieve info part
-        if blog_domain[-12:] == "linkedin.com":
+        if blog_domain[-(len("linkedin.com")):] == "linkedin.com":
             return
             # TODO www.linkedin.com retrieve info part
-        if blog_domain[-10:] == "github.com":
+        if blog_domain[-(len("github.com")):] == "github.com":
             return
-        if blog_domain[-9:] == "github.io":
+        if blog_domain[-(len("github.io")):] == "github.io":
             return
-        if blog_domain[-12:] == "facebook.com":
+        if blog_domain[-(len("facebook.com")):] == "facebook.com":
             return
         blog_url_location_info = await domain_info.get_domain_info(self.blog)
         self.location.update(blog_url_location_info['location'])
