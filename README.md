@@ -2,19 +2,21 @@
 
 Detect risky projects in your dependency chain.
 
+![rch-github-logo](https://user-images.githubusercontent.com/2877920/167950182-7a436304-7480-4b8b-9492-35af4a7d7be6.png)
+
 ---
 
 ## The main idea
 
 This package helps to prevent supply chain risks by analyzing _metadata_ about the repository and its contributors. 
 
-Open-source maintainers weaponize their projects by introducing backdoors and vulnerabilities in the source code. Aside from being led by criminal and activist motivations, maintainers who live in regions with oppressive governments might be oppressed to introduce backdoors involuntarily. 
+Open-source maintainers weaponize their projects by introducing backdoors and vulnerabilities in the source code. Aside from being led by criminal and activist motivations, maintainers who live in regions with oppressive governments might be forced to introduce backdoors involuntarily. 
 
-Risky Code Hunter analyses the given repository collects information about its maintainers and contributors, and outputs the "risk rating". All info about contributors is collected through the official GitHub API, and other public sources, and is solely based on the information users provide in their accounts.
+Risky Code Hunter analyses the given repository, collects information about its maintainers and contributors, and outputs the "risk rating". All info about contributors is collected through the official GitHub API, and other public sources, and is solely based on the information users provide in their accounts.
 
 ## How it works
 
-You install the package, provide a link to a repository-in-question and check the output. The output contains risk ratings and info about each contributor. You decide whether to use the repository in your product.
+You install the package, provide a link to the repository-in-question and check the output. The output contains risk ratings and info about each contributor. You decide whether to use the repository in your product.
 
 The default configuration uses a growing list of criteria to identify potentially problematic repositories: maintainers’ GitHub and Twitter profiles, location, commit history, email domain, etc. Use Risky Code Hunter as a manual tool for one-time check, or change it to be a part of your CICD pipeline.
 
@@ -31,7 +33,7 @@ Install Risky Code Hunter via pip:
 pip3 install git+https://github.com/cossacklabs/risky-code-hunter.git@main 
 ```
 
-or alternatively like zip:
+or alternatively as zip:
 ```
 pip3 install https://github.com/cossacklabs/risky-code-hunter/archive/main.zip 
 ```
