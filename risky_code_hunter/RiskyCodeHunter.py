@@ -153,49 +153,49 @@ class RiskyCodeHunter:
         trig_rule_list: List[TriggeredRule] = []
         login = contributor.login
         trig_rule_list.extend(await self.__check_login_rules(login, field))
-        await contributor.add_triggered_rules(trig_rule_list)
+        contributor.add_triggered_rules(trig_rule_list)
 
     async def __check_contributor_location(self, contributor: Contributor, field: Dict):
         trig_rule_list: List[TriggeredRule] = []
         locations = contributor.location
         trig_rule_list.extend(await self.__check_location_rules(locations, field))
-        await contributor.add_triggered_rules(trig_rule_list)
+        contributor.add_triggered_rules(trig_rule_list)
 
     async def __check_contributor_emails(self, contributor: Contributor, field: Dict):
         trig_rule_list: List[TriggeredRule] = []
         emails = contributor.emails
         trig_rule_list.extend(await self.__check_emails_rules(emails, field))
-        await contributor.add_triggered_rules(trig_rule_list)
+        contributor.add_triggered_rules(trig_rule_list)
 
     async def __check_contributor_twitter_username(self, contributor: Contributor, field: Dict):
         trig_rule_list: List[TriggeredRule] = []
         twitter_username = contributor.twitter_username
         trig_rule_list.extend(await self.__check_twitter_username_rules(twitter_username, field))
-        await contributor.add_triggered_rules(trig_rule_list)
+        contributor.add_triggered_rules(trig_rule_list)
 
     async def __check_contributor_names(self, contributor: Contributor, field: Dict):
         trig_rule_list: List[TriggeredRule] = []
         names = contributor.names
         trig_rule_list.extend(await self.__check_names_rules(names, field))
-        await contributor.add_triggered_rules(trig_rule_list)
+        contributor.add_triggered_rules(trig_rule_list)
 
     async def __check_contributor_company(self, contributor: Contributor, field: Dict):
         trig_rule_list: List[TriggeredRule] = []
         company = contributor.company
         trig_rule_list.extend(await self.__check_company_rules(company, field))
-        await contributor.add_triggered_rules(trig_rule_list)
+        contributor.add_triggered_rules(trig_rule_list)
 
     async def __check_contributor_blog(self, contributor: Contributor, field: Dict):
         trig_rule_list: List[TriggeredRule] = []
         blog = contributor.blog
         trig_rule_list.extend(await self.__check_blog_rules(blog, field))
-        await contributor.add_triggered_rules(trig_rule_list)
+        contributor.add_triggered_rules(trig_rule_list)
 
     async def __check_contributor_bio(self, contributor: Contributor, field: Dict):
         trig_rule_list: List[TriggeredRule] = []
         bio = contributor.bio
         trig_rule_list.extend(await self.__check_bio_rules(bio, field))
-        await contributor.add_triggered_rules(trig_rule_list)
+        contributor.add_triggered_rules(trig_rule_list)
 
     # Use default substring search
     async def __check_login_rules(self, login, login_rules) -> List[TriggeredRule]:
@@ -206,7 +206,7 @@ class RiskyCodeHunter:
     async def __check_location_rules(self, locations, location_rules) -> List[TriggeredRule]:
         trig_rule_list: List[TriggeredRule] = []
         for location in locations:
-            trig_rule_list.extend(await self.__check_field_rules_location(location, location_rules))
+            trig_rule_list.extend(await self.__check_field_rules_location(location.lower(), location_rules))
         return trig_rule_list
 
     # Use default substring search
@@ -243,8 +243,8 @@ class RiskyCodeHunter:
         return triggered_rules
 
     async def __check_field_rules_location(self, value, field) -> List[TriggeredRule]:
-        value = re.sub(r"[!@#$%^&*()\[\]{};:,./<>?|`~\-=_+]", " ", value.lower())
-        value = ''.join((' ', value.lower(), ' '))
+        value = re.sub(r"[!@#$%^&*()\[\]{};:,./<>?|`~\-=_+]", " ", value)
+        value = ''.join((' ', value, ' '))
         trig_rule_list: List[TriggeredRule] = []
         for rule in field['rules']:
             for trigger in rule['triggers']:
