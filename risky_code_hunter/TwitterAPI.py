@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Dict
 
@@ -138,7 +139,13 @@ class TwitterAPI(AbstractAPI):
     # more info about this twitter graphql API:
     # https://stackoverflow.com/questions/65502651/graphql-value-in-twitter-api
     async def get_twitter_account_info(self, twitter_username) -> Dict:
-        is_result_present, cached_result = await self._cache.get_and_await(twitter_username, create_new_awaitable=True)
+        try:
+            # set timeout to 120
+            is_result_present, cached_result = await self._cache.get_and_await(
+                twitter_username, create_new_awaitable=True, timeout=120
+            )
+        except asyncio.TimeoutError:
+            is_result_present = False
         if is_result_present:
             return cached_result
         url = 'https://twitter.com/i/api/graphql/Bhlf1dYJ3bYCKmLfeEQ31A/UserByScreenName'

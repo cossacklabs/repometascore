@@ -30,7 +30,8 @@ class Cache:
     #               -> caller MUST call `_save_to_cache` when he will get a result
     #   -> elif `create_new_awaitable` is False -> Exit lock ->
     #       -> return `is_result_already_present` as False and `None` as a result
-    async def get_and_await(self, key: Any, create_new_awaitable=False, timeout: float = -1) -> Tuple[bool, Any]:
+    # if timeout set to < 0 - will await infinitely
+    async def get_and_await(self, key: Any, create_new_awaitable=False, timeout: float = 60) -> Tuple[bool, Any]:
         async with self.__results_cache_lock:
             is_result_already_present = False
             cached_result = self.__get_from_cache(key)

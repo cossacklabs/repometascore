@@ -55,7 +55,13 @@ class DomainInfo(AbstractAPI):
 
     async def get_domain_info(self, domain: str) -> Dict:
         domain = self.get_domain(domain)
-        is_result_present, cached_result = await self._cache.get_and_await(domain, create_new_awaitable=True)
+        try:
+            # set timeout to 180 as getting whois info takes too much time
+            is_result_present, cached_result = await self._cache.get_and_await(
+                domain, create_new_awaitable=True, timeout=180
+            )
+        except asyncio.TimeoutError:
+            is_result_present = False
         if is_result_present:
             return cached_result
         result = {'location': []}
