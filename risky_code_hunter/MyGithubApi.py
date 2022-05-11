@@ -28,10 +28,11 @@ class PageNotFound(Exception):
 
 
 class GithubAPI(AbstractAPI):
-    auth_tokens: Dict[str, Dict]
     EXCEEDED_RATE_LIMIT_MSG = 'API rate limit exceeded for user ID'
     EXCEEDED_SECONDARY_MSG = 'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.'
+    auth_tokens: Dict[str, Dict]
     auth_tokens_checked: bool
+    check_auth_token_lock: asyncio.Lock
     __print_timestamps: Dict
 
     def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None, verbose: int = 0):
@@ -42,6 +43,7 @@ class GithubAPI(AbstractAPI):
             self.auth_tokens[f'token {git_token}'] = \
                 {"is_good": False, "reset_time": -1, "is_full": False, "event": None}
         self.auth_tokens_checked = False
+        self.check_auth_token_lock = asyncio.Lock()
         self.__print_timestamps = {}
         return
 
@@ -101,19 +103,30 @@ class GithubAPI(AbstractAPI):
     async def handle_response_503(self, **kwargs):
         return True
 
+    # Enter Lock
+    # if token exist in tokens_dict -> if token is full and its reset time is in future -> return True
+    #   -> get event from token dict -> if event is exists -> somebody is already requesting
+    #                                   -> if event is not exist -> create event and add it to token dict
+    # Exit Lock
+    # if somebody is already requesting -> wait to event to be set and return result
+    # else -> Usual logic
     async def check_auth_token(self, token) -> bool:
-        if token in self.auth_tokens:
-            event: asyncio.Event = self.auth_tokens[token]['event']
-            if event:
-                await event.wait()
-                return token in self.auth_tokens
-            if self.auth_tokens[token]['is_full'] and self.auth_tokens[token]['reset_time'] > int(time.time()):
-                return True
-        else:
-            self.auth_tokens[token] = {"is_good": False, "reset_time": -1, "is_full": False, "event": None}
-
-        event = asyncio.Event()
-        self.auth_tokens[token]["event"] = event
+        is_already_requesting: bool
+        async with self.check_auth_token_lock.acquire():
+            if token in self.auth_tokens:
+                if self.auth_tokens[token]['is_full'] and self.auth_tokens[token]['reset_time'] > int(time.time()):
+                    return True
+                event: asyncio.Event = self.auth_tokens[token].get('event')
+                if isinstance(event, asyncio.Event):
+                    is_already_requesting = True
+            else:
+                self.auth_tokens[token] = {"isGood": False, "reset": -1, "isFull": False, "event": None}
+            if not is_already_requesting:
+                event = asyncio.Event()
+                self.auth_tokens[token]["event"] = event
+        if is_already_requesting:
+            await event.wait()
+            return token in self.auth_tokens
         try:
             resp = await self.request(
                 method=HTTP_METHOD.GET,
@@ -128,6 +141,7 @@ class GithubAPI(AbstractAPI):
             event.set()
             return False
         except Exception as exception:
+            self.auth_tokens[token]['event'] = None
             event.set()
             raise exception
 
@@ -253,16 +267,13 @@ class GithubAPI(AbstractAPI):
     async def get_company_info(self, company_url) -> Dict:
         is_result_already_present, cached_result = await self._await_from_cache(company_url)
         if is_result_already_present:
-            return cached_result['result']
+            return cached_result
         company_resp = await self.request(
             method=HTTP_METHOD.GET,
             url=company_url,
         )
         company_info = await company_resp.json()
-        cached_result['result'] = company_info
-        event = cached_result.pop('event', None)
-        if event:
-            event.set()
+        await self._save_to_cache(company_url, company_info)
         return company_info
 
     async def get_random_token(self) -> str:
