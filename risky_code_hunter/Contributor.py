@@ -32,11 +32,11 @@ class Contributor:
     # risk rating
     # 0 - clear
     # n - risky
-    riskRating: float
+    risk_rating: float
 
     # List of instances TriggeredRule
     # Why rule has been triggered
-    triggeredRules: List[TriggeredRule]
+    triggered_rules: List[TriggeredRule]
 
     def __init__(self, input_dict=None):
         self.login = str()
@@ -52,8 +52,8 @@ class Contributor:
         self.company = str()
         self.blog = str()
         self.bio = set()
-        self.riskRating = float()
-        self.triggeredRules = []
+        self.risk_rating = float()
+        self.triggered_rules = []
         if input_dict:
             self.add_value(input_dict)
         return
@@ -127,9 +127,9 @@ class Contributor:
         if isinstance(bio, str):
             self.bio.add(bio)
 
-        risk_rating = input_dict.get('riskRating')
+        risk_rating = input_dict.get('risk_rating')
         if isinstance(risk_rating, float):
-            self.riskRating = risk_rating
+            self.risk_rating = risk_rating
 
         return
 
@@ -221,9 +221,9 @@ class Contributor:
         result['twitter_username'] = list(self.twitter_username)
 
         triggered_rules = []
-        for triggeredRule in self.triggeredRules:
+        for triggeredRule in self.triggered_rules:
             triggered_rules.append(triggeredRule.get_json())
-        result['triggeredRules'] = triggered_rules
+        result['triggered_rules'] = triggered_rules
 
         return result
 
