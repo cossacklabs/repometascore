@@ -10,13 +10,10 @@ import whois
 
 from .AbstractAPI import AbstractAPI
 
-
-class NICClientQuiet(whois.NICClient):
-    def whois(self, query, hostname, flags, many_results=False, quiet=True):
-        return super().whois(query, hostname, flags, many_results, quiet)
-
-
-whois.NICClient = NICClientQuiet
+# set function defaults
+# def whois(self, query, hostname, flags, many_results=False, quiet=False) =>
+#   => def whois(self, query, hostname, flags, many_results=False, quiet=True)
+whois.NICClient.whois.__defaults__ = (False, True)
 
 
 def async_wrap(func):
@@ -51,7 +48,7 @@ class DomainInfo(AbstractAPI):
 
     @staticmethod
     def get_domain(url) -> str:
-        return urlparse(url).netloc.lower()
+        return str(urlparse(url).hostname).lower()
 
     async def get_domain_info(self, domain: str) -> Dict:
         domain = self.get_domain(domain)
@@ -89,11 +86,17 @@ class DomainInfo(AbstractAPI):
                     time.sleep(self.request_limit_timeout(retry_num))
                     continue
                 break
+            # Known whois parser and package errors. Can be showed with verbose level >= 4
             except (NotImplementedError, AttributeError, ConnectionResetError, KeyboardInterrupt,
-                    whois.parser.PywhoisError):
+                    whois.parser.PywhoisError) as exception:
+                self.print(f"DomainInfo.retry_sync_func({func.__name__}, {args}, {kwargs})."
+                           f" Raised an exception: \n{exception}", verbose_level=4)
                 return None
-            except Exception:
+            # Unknown whois parser and package errors. Can be showed with verbose level >= 4
+            except Exception as exception:
                 time.sleep(self.request_limit_timeout(retry_num))
+                self.print(f"DomainInfo.retry_sync_func({func.__name__}, {args}, {kwargs})."
+                           f" Raised an exception: \n{exception}", verbose_level=4)
                 continue
         return result
 
