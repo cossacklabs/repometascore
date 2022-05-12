@@ -10,6 +10,7 @@
       "rules": [
         {
           "triggers": [
+            "\uD83C\uDDF7\uD83C\uDDFA",
             "russia",
             "россия",
             "rossiya",
@@ -216,6 +217,7 @@
             "elista",
             "engels",
             "ertil",
+            "ekaterinburg",
             "fatezh",
             "fokino",
             "fokino",
@@ -2345,6 +2347,7 @@
             "russky",
             "rossia",
             "russia",
+            "rossiya",
             "rambler",
             "yandex"
           ],
@@ -2368,10 +2371,12 @@
       "rules": [
         {
           "triggers": [
+            "\uD83C\uDDF7\uD83C\uDDFA",
             "rusia",
             "russky",
             "rossia",
             "russia",
+            "rossiya",
             "rambler",
             "yandex"
           ],
@@ -2395,6 +2400,7 @@
       "rules": [
         {
           "triggers": [
+            "\uD83C\uDDF7\uD83C\uDDFA",
             "rusia",
             "russky",
             "rossia",
@@ -2426,6 +2432,7 @@
       "rules": [
         {
           "triggers": [
+            "\uD83C\uDDF7\uD83C\uDDFA",
             "russia",
             "россия",
             "rossiya",
@@ -2946,6 +2953,7 @@
       "rules": [
         {
           "triggers": [
+            "\uD83C\uDDF7\uD83C\uDDFA",
             "rusia",
             "russky",
             "rossia",
