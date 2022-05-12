@@ -137,8 +137,8 @@ class Contributor:
         if not (isinstance(self.url, str) and self.url):
             return self
 
-        await self.fill_with_profile_info(request_manager.githubAPI)
-        blog_domain: str = request_manager.domainInfo.get_domain(self.blog)
+        await self.fill_with_profile_info(request_manager.github_api)
+        blog_domain: str = request_manager.domain_info.get_domain(self.blog)
         # we are looking for twitter URLs with  `#!`
         # There was at least one GitHub account with "twitter.com/#!/nrg8000" (for example)
         # In fact those "#!" may be an unlimited number,
@@ -156,10 +156,10 @@ class Contributor:
             except IndexError:
                 pass
         tasks = [
-            self.fill_with_commits_info(repo_author, repo_name, request_manager.githubAPI),
-            self.fill_with_companies_info(request_manager.githubAPI),
-            self.fill_with_twitter_info(request_manager.twitterAPI),
-            self.fill_with_blog_url_info(request_manager.domainInfo),
+            self.fill_with_commits_info(repo_author, repo_name, request_manager.github_api),
+            self.fill_with_companies_info(request_manager.github_api),
+            self.fill_with_twitter_info(request_manager.twitter_api),
+            self.fill_with_blog_url_info(request_manager.domain_info),
         ]
         await asyncio.gather(*tasks)
         return self
