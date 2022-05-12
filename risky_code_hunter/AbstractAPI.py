@@ -33,6 +33,7 @@ class AbstractAPI(ABC):
         self.handle_unpredicted_response = self._response_handlers.pop(
             self.UNPREDICTED_RESPONSE_HANDLER_INDEX, self.handle_unpredicted_response
         )
+        self._cache = Cache()
 
     @abstractmethod
     def create_response_handlers(self) -> Dict:

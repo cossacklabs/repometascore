@@ -115,7 +115,8 @@ class GithubAPI(AbstractAPI):
     # else -> Usual logic
     async def check_auth_token(self, token) -> bool:
         is_already_requesting: bool
-        async with self.check_auth_token_lock.acquire():
+        async with self.check_auth_token_lock:
+            is_already_requesting = False
             if token in self.auth_tokens:
                 if self.auth_tokens[token]['is_full'] and self.auth_tokens[token]['reset_time'] > int(time.time()):
                     return True
