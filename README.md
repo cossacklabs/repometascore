@@ -1,24 +1,31 @@
 # Risky Code Hunter
 
-Detect risky code in your dependency chain.
+Detect risky projects in your dependency chain.
+
+![rch-github-logo](https://user-images.githubusercontent.com/2877920/167950182-7a436304-7480-4b8b-9492-35af4a7d7be6.png)
 
 ---
 
 ## The main idea
 
-This package helps to prevent supply chain risks by analyzing contributors in specific repositories. Nothing prevents open source project maintainers, especially from oppressed countries, from injecting malicious code and introducing backdoors.
+This package helps to prevent supply chain risks by analyzing _metadata_ about the repository and its contributors. 
 
-Risky Code Hunter analyses the given repository collects information about its maintainers and contributors, and outputs the "risk rating". All info about contributors is collected through the official GitHub API, and other public sources, and is solely based on the information users provide in their accounts.
+Open-source maintainers weaponize their projects by introducing backdoors and vulnerabilities in the source code. Aside from being led by criminal and activist motivations, maintainers who live in regions with oppressive governments might be forced to introduce backdoors involuntarily. 
+
+Risky Code Hunter analyses the given repository, collects information about its maintainers and contributors, and outputs the "risk rating". All info about contributors is collected through the official GitHub API, and other public sources, and is solely based on the information users provide in their accounts.
 
 ## How it works
 
-You install the package, provide a link to a repository-in-question and check the output. The output contains risk ratings and info about each contributor. You decide whether to use the repository in your product.
+You install the package, provide a link to the repository-in-question and check the output. The output contains risk ratings and info about each contributor. You decide whether to use the repository in your product.
 
-The default configuration aims to detect repositories originating from Russia or being under the significant control of Russian citizens. Without making any statement about potential Russian malicious activity in open-source, this tool was built to mitigate the risks.
+The default configuration uses a growing list of criteria to identify potentially problematic repositories: maintainers’ GitHub and Twitter profiles, location, commit history, email domain, etc. Use Risky Code Hunter as a manual tool for one-time check, or change it to be a part of your CICD pipeline.
+
+⚠️ _The configurations are rather raw and still work in progress. Feel free to contribute!_
+
 
 ## Installation
 
-Requirements: Debian, Ubuntu, Mac. Python 3.8+ installed.
+Requirements: Debian, Ubuntu, or Mac. Python 3.8+ installed.
 
 Install Risky Code Hunter via pip:
 
@@ -26,7 +33,7 @@ Install Risky Code Hunter via pip:
 pip3 install git+https://github.com/cossacklabs/risky-code-hunter.git@main 
 ```
 
-or alternatively like zip:
+or alternatively as zip:
 ```
 pip3 install https://github.com/cossacklabs/risky-code-hunter/archive/main.zip 
 ```
@@ -96,10 +103,23 @@ Variables that are used in the config file:
 | `risk_value` | `float`     | This value accumulates to `Contributor.riskRating` variable. Also can be a negative one for some extra cases.                                                                                         |
 ---
 
+# Next steps
+
+1. Improving location parsing & scores.
+2. Adding more checks, improving dictionaries.
+3. Adding risk factor based on comments language.
+4. Adding checks inspired by [What are Weak Links in the npm Supply Chain?](https://arxiv.org/abs/2112.10165) paper.
+
+---
+
 # License
 
 "Risky Code Hunter" is distributed under the terms of the Apache License (Version 2.0).
 
 This software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 
+---
 
+# Contributing
+
+Feel free to extend the configuration, rules, scoring and come back with PRs. Also, we are welcome contributions that aimed at automation: add to CICD, add to GitHub plugins, etc. 
