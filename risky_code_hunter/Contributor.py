@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Tuple
 from urllib.parse import urlparse
 
 from .DomainInfo import DomainInfo
@@ -38,6 +38,9 @@ class Contributor:
     # Why rule has been triggered
     triggered_rules: List[TriggeredRule]
 
+    # ignored domains for getting domain info method
+    __ignored_domains: Tuple
+
     def __init__(self, input_dict=None):
         self.login = str()
         self.url = str()
@@ -56,6 +59,7 @@ class Contributor:
         self.triggered_rules = []
         if input_dict:
             self.add_value(input_dict)
+        self.__ignored_domains = ('about.me', 'linkedin.com', 'twitter.com', 'github.com', 'github.io', 'facebook.com')
         return
 
     # Get some dict with values
@@ -211,22 +215,6 @@ class Contributor:
                 self.location.add(location)
         return
 
-    def get_json(self) -> Dict:
-        result = self.__dict__.copy()
-
-        result['names'] = list(self.names)
-        result['emails'] = list(self.emails)
-        result['location'] = list(self.location)
-        result['bio'] = list(self.bio)
-        result['twitter_username'] = list(self.twitter_username)
-
-        triggered_rules = []
-        for triggeredRule in self.triggered_rules:
-            triggered_rules.append(triggeredRule.get_json())
-        result['triggered_rules'] = triggered_rules
-
-        return result
-
     async def fill_with_twitter_info(self, twitter_api: TwitterAPI):
         if not isinstance(self.twitter_username, Set):
             return
@@ -251,17 +239,26 @@ class Contributor:
         if not (isinstance(self.blog, str) and self.blog):
             return
         blog_domain = domain_info.get_domain(self.blog)
-        if blog_domain[-(len("about.me")):] == "about.me":
-            return
-            # TODO about.me retrieve info part
-        if blog_domain[-(len("linkedin.com")):] == "linkedin.com":
-            return
-            # TODO www.linkedin.com retrieve info part
-        if blog_domain[-(len("github.com")):] == "github.com":
-            return
-        if blog_domain[-(len("github.io")):] == "github.io":
-            return
-        if blog_domain[-(len("facebook.com")):] == "facebook.com":
+        # "linkedin.com" in "many.sub.domains.linkedin.com"
+        # but not "linkedin.com" in "linkedin.com.fishingservice.com"
+        if blog_domain.endswith(self.__ignored_domains):
             return
         blog_url_location_info = await domain_info.get_domain_info(self.blog)
         self.location.update(blog_url_location_info['location'])
+
+    def get_json(self) -> Dict:
+        result = self.__dict__.copy()
+
+        result['names'] = list(self.names)
+        result['emails'] = list(self.emails)
+        result['location'] = list(self.location)
+        result['bio'] = list(self.bio)
+        result['twitter_username'] = list(self.twitter_username)
+        result.pop('_Contributor__ignored_domains', None)
+
+        triggered_rules = []
+        for triggeredRule in self.triggered_rules:
+            triggered_rules.append(triggeredRule.get_json())
+        result['triggered_rules'] = triggered_rules
+
+        return result
