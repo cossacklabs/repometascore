@@ -1,5 +1,6 @@
 import json
 import asyncio
+import re
 from typing import List, Dict, Tuple, Iterable, Set
 
 from .RequestManager import RequestManager
@@ -120,7 +121,7 @@ class RiskyCodeHunter:
 
     async def __checkAndFillContributor(self, repo_scan: Repo, contributor: Contributor):
         contributor = await contributor.fillWithInfo(repo_scan.repo_author, repo_scan.repo_name, self.requestManager)
-        contributor = await self.__checkContributor(contributor)
+        contributor = await self.__check_contributor(contributor)
         if contributor.riskRating <= repo_scan.risk_boundary_value + 3:
             # TODO additional info from github repo
             # clone githubrepo and check commit timezones
@@ -128,38 +129,150 @@ class RiskyCodeHunter:
             pass
         return contributor
 
-    async def __checkContributor(self, contributor):
+    async def __check_contributor(self, contributor):
         for field in self.config['fields']:
-            await self.__checkContributorField(contributor, field)
+            if field['name'].lower() == 'login':
+                await self.__check_contributor_login(contributor, field)
+            elif field['name'].lower() == 'location':
+                await self.__check_contributor_location(contributor, field)
+            elif field['name'].lower() == 'emails':
+                await self.__check_contributor_emails(contributor, field)
+            elif field['name'].lower() == 'twitter_username':
+                await self.__check_contributor_twitter_username(contributor, field)
+            elif field['name'].lower() == 'names':
+                await self.__check_contributor_names(contributor, field)
+            elif field['name'].lower() == 'company':
+                await self.__check_contributor_company(contributor, field)
+            elif field['name'].lower() == 'blog':
+                await self.__check_contributor_blog(contributor, field)
+            elif field['name'].lower() == 'bio':
+                await self.__check_contributor_bio(contributor, field)
         return contributor
 
-    async def __checkContributorField(self, contributor, field):
-        contributor_field = contributor.__dict__.get(field['name'])
-        trigRuleList = []
-        if isinstance(contributor_field, Set):
-            for contributor_field_value in contributor_field:
-                trigRuleList += await self.__checkFieldRules(contributor_field_value.lower(), field)
-        elif contributor_field:
-            trigRuleList += await self.__checkFieldRules(contributor_field.lower(), field)
-        contributor.triggeredRules += trigRuleList
-        for trigRule in trigRuleList:
-            contributor.riskRating += trigRule.riskValue
-        return
+    async def __check_contributor_login(self, contributor: Contributor, field: Dict):
+        trig_rule_list: List[TriggeredRule] = []
+        login = contributor.login
+        trig_rule_list.extend(await self.__check_login_rules(login, field))
+        contributor.add_triggered_rules(trig_rule_list)
 
-    async def __checkFieldRules(self, value, field) -> List[TriggeredRule]:
-        trigRuleList: List[TriggeredRule] = []
+    async def __check_contributor_location(self, contributor: Contributor, field: Dict):
+        trig_rule_list: List[TriggeredRule] = []
+        locations = contributor.location
+        trig_rule_list.extend(await self.__check_location_rules(locations, field))
+        contributor.add_triggered_rules(trig_rule_list)
+
+    async def __check_contributor_emails(self, contributor: Contributor, field: Dict):
+        trig_rule_list: List[TriggeredRule] = []
+        emails = contributor.emails
+        trig_rule_list.extend(await self.__check_emails_rules(emails, field))
+        contributor.add_triggered_rules(trig_rule_list)
+
+    async def __check_contributor_twitter_username(self, contributor: Contributor, field: Dict):
+        trig_rule_list: List[TriggeredRule] = []
+        twitter_username = contributor.twitter_username
+        trig_rule_list.extend(await self.__check_twitter_username_rules(twitter_username, field))
+        contributor.add_triggered_rules(trig_rule_list)
+
+    async def __check_contributor_names(self, contributor: Contributor, field: Dict):
+        trig_rule_list: List[TriggeredRule] = []
+        names = contributor.names
+        trig_rule_list.extend(await self.__check_names_rules(names, field))
+        contributor.add_triggered_rules(trig_rule_list)
+
+    async def __check_contributor_company(self, contributor: Contributor, field: Dict):
+        trig_rule_list: List[TriggeredRule] = []
+        company = contributor.company
+        trig_rule_list.extend(await self.__check_company_rules(company, field))
+        contributor.add_triggered_rules(trig_rule_list)
+
+    async def __check_contributor_blog(self, contributor: Contributor, field: Dict):
+        trig_rule_list: List[TriggeredRule] = []
+        blog = contributor.blog
+        trig_rule_list.extend(await self.__check_blog_rules(blog, field))
+        contributor.add_triggered_rules(trig_rule_list)
+
+    async def __check_contributor_bio(self, contributor: Contributor, field: Dict):
+        trig_rule_list: List[TriggeredRule] = []
+        bio = contributor.bio
+        trig_rule_list.extend(await self.__check_bio_rules(bio, field))
+        contributor.add_triggered_rules(trig_rule_list)
+
+    # Use default substring search
+    async def __check_login_rules(self, login, login_rules) -> List[TriggeredRule]:
+        return await self.__check_field_rules_substr(login.lower(), login_rules)
+
+    # Only will trigger on same location name
+    # Location names are being checked with extra spaces
+    async def __check_location_rules(self, locations, location_rules) -> List[TriggeredRule]:
+        trig_rule_list: List[TriggeredRule] = []
+        for location in locations:
+            trig_rule_list.extend(await self.__check_field_rules_location(location.lower(), location_rules))
+        return trig_rule_list
+
+    # Use default substring search
+    async def __check_emails_rules(self, emails, email_rules) -> List[TriggeredRule]:
+        triggered_rules: List[TriggeredRule] = []
+        for email in emails:
+            triggered_rules.extend(await self.__check_field_rules_substr(email.lower(), email_rules))
+        return triggered_rules
+
+    # Use default substring search
+    async def __check_twitter_username_rules(self, twitter_username, twitter_username_rules) -> List[TriggeredRule]:
+        return await self.__check_field_rules_substr(twitter_username.lower(), twitter_username_rules)
+
+    # Use default substring search
+    async def __check_names_rules(self, names, names_rules) -> List[TriggeredRule]:
+        triggered_rules: List[TriggeredRule] = []
+        for name in names:
+            triggered_rules.extend(await self.__check_field_rules_substr(name.lower(), names_rules))
+        return triggered_rules
+
+    # Use default substring search
+    async def __check_company_rules(self, company, company_rules) -> List[TriggeredRule]:
+        return await self.__check_field_rules_substr(company.lower(), company_rules)
+
+    # Use default substring search
+    async def __check_blog_rules(self, blog, blog_rules) -> List[TriggeredRule]:
+        return await self.__check_field_rules_substr(blog.lower(), blog_rules)
+
+    # Use default substring search
+    async def __check_bio_rules(self, bio, bio_rules) -> List[TriggeredRule]:
+        triggered_rules: List[TriggeredRule] = []
+        for biography in bio:
+            triggered_rules.extend(await self.__check_field_rules_substr(biography.lower(), bio_rules))
+        return triggered_rules
+
+    async def __check_field_rules_location(self, value, field) -> List[TriggeredRule]:
+        value = re.sub(r"[!@#$%^&*()\[\]{};:,./<>?|`~\-=_+]", " ", value)
+        value = ''.join((' ', value, ' '))
+        trig_rule_list: List[TriggeredRule] = []
         for rule in field['rules']:
             for trigger in rule['triggers']:
-                if trigger in value:
-                    trigRule = TriggeredRule(
+                if f" {trigger} " in value:
+                    trig_rule = TriggeredRule(
                         fieldName=field['name'],
                         type=rule['type'],
                         trigger=trigger,
                         value=value,
                         riskValue=rule['risk_value']
                     )
-                    trigRuleList.append(trigRule)
-        return trigRuleList
+                    trig_rule_list.append(trig_rule)
+        return trig_rule_list
+
+    async def __check_field_rules_substr(self, value, field) -> List[TriggeredRule]:
+        trig_rule_list: List[TriggeredRule] = []
+        for rule in field['rules']:
+            for trigger in rule['triggers']:
+                if trigger in value:
+                    trig_rule = TriggeredRule(
+                        fieldName=field['name'],
+                        type=rule['type'],
+                        trigger=trigger,
+                        value=value,
+                        riskValue=rule['risk_value']
+                    )
+                    trig_rule_list.append(trig_rule)
+        return trig_rule_list
 
     def print(self, *args, verbose_level: int = 1, **kwargs):
         if self.verbose >= verbose_level:
