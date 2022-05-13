@@ -1,7 +1,7 @@
 import asyncio
 import json
 import re
-from typing import List, Dict, Tuple, Iterable, Set
+from typing import List, Dict, Tuple, Iterable
 from urllib.parse import urlparse
 
 from .Contributor import Contributor
@@ -25,6 +25,7 @@ class RiskyCodeHunter:
     request_manager: RequestManager
     verbose: int
     config: Dict
+    compiled_regex_pattern: re.Pattern
 
     def __init__(self, config, git_tokens=None, verbose: int = 0):
         self.__load_config(config)
@@ -33,6 +34,7 @@ class RiskyCodeHunter:
         self.request_manager = RequestManager(self.config, verbose=verbose)
         self.repo_list = []
         self.verbose = verbose
+        self.compiled_regex_pattern = re.compile(r"[!@#$%^&*()\[\]{};:,./<>?|`~=_+]")
         return
 
     # load config via config file
@@ -188,8 +190,13 @@ class RiskyCodeHunter:
         return triggered_rules
 
     # Use default substring search
-    async def __check_twitter_username_rules(self, twitter_username, twitter_username_rules) -> List[TriggeredRule]:
-        return await self.__check_field_rules_substr(twitter_username.lower(), twitter_username_rules)
+    async def __check_twitter_username_rules(self, twitter_usernames, twitter_username_rules) -> List[TriggeredRule]:
+        triggered_rules: List[TriggeredRule] = []
+        for twitter_username in twitter_usernames:
+            triggered_rules.extend(
+                await self.__check_field_rules_substr(twitter_username.lower(), twitter_username_rules)
+            )
+        return triggered_rules
 
     # Use default substring search
     async def __check_names_rules(self, names, names_rules) -> List[TriggeredRule]:
@@ -214,15 +221,15 @@ class RiskyCodeHunter:
         return triggered_rules
 
     async def __check_field_rules_location(self, value, field) -> List[TriggeredRule]:
-        value = re.sub(r"[!@#$%^&*()\[\]{};:,./<>?|`~\-=_+]", " ", value)
-        value = ''.join((' ', value, ' '))
+        value_modified = self.compiled_regex_pattern.sub(" ", value)
+        value_modified = ''.join((' ', value_modified, ' '))
         trig_rule_list: List[TriggeredRule] = []
         for rule in field['rules']:
             for trigger in rule['triggers']:
-                if f" {trigger} " in value:
+                if f" {trigger} " in value_modified:
                     trig_rule = TriggeredRule(
-                        fieldName=field['name'],
-                        type=rule['type'],
+                        field_name=field['name'],
+                        type_verbal=rule['type'],
                         trigger=trigger,
                         value=value,
                         risk_value=rule['risk_value']
@@ -236,11 +243,11 @@ class RiskyCodeHunter:
             for trigger in rule['triggers']:
                 if trigger in value:
                     trig_rule = TriggeredRule(
-                        fieldName=field['name'],
-                        type=rule['type'],
+                        field_name=field['name'],
+                        type_verbal=rule['type'],
                         trigger=trigger,
                         value=value,
-                        riskValue=rule['risk_value']
+                        risk_value=rule['risk_value']
                     )
                     trig_rule_list.append(trig_rule)
         return trig_rule_list
