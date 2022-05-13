@@ -2,23 +2,23 @@ from typing import Dict
 
 
 class TriggeredRule:
-    type: str
-    fieldName: str
+    type_verbal: str
+    field_name: str
     trigger: str
     value: str
-    riskValue: float
+    risk_value: float
     description: str
 
-    def __init__(self, fieldName, type, trigger, value, riskValue):
-        self.fieldName = fieldName
-        self.type = type
+    def __init__(self, field_name, type_verbal, trigger, value, risk_value):
+        self.field_name = field_name
+        self.type_verbal = type_verbal
         self.trigger = trigger
         self.value = value
-        self.riskValue = riskValue
-        self.description = self.getPrint()
+        self.risk_value = risk_value
+        self.description = self.get_print()
 
-    def getPrint(self) -> str:
-        return f"{self.type}. {self.fieldName.capitalize()}. Rule: '{self.trigger}'. Value: '{self.value}'"
+    def get_print(self) -> str:
+        return f"{self.type_verbal}. {self.field_name.capitalize()}. Rule: '{self.trigger}'. Value: '{self.value}'"
 
-    def getJSON(self) -> Dict:
+    def get_json(self) -> Dict:
         return self.__dict__.copy()
