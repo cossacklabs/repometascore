@@ -56,20 +56,37 @@ class GithubAPI(AbstractAPI):
     def create_response_handlers(self) -> Dict:
         result = {
             self.UNPREDICTED_RESPONSE_HANDLER_INDEX: self.handle_unpredicted_response,
+            # correct OK response
             200: self.handle_response_200,
+            # occurred during a high load of GitHub API and
+            # returned the correct result in case of repeating the same request
             202: self.handle_response_202,
+            # returned only in cases of invalid GitHub Token
             401: self.handle_response_401,
+            # returned in cases of exceeding secondary or primary token rate limits
             403: self.handle_response_403,
+            # occurred in case of incorrect URL or deleted GitHub page
             404: self.handle_response_404,
+            # occurred rarely when exceeding the primary token rate limit
             429: self.handle_response_429,
+            # occurred during a high load of GitHub API and
+            # returned the correct result in case of repeating the same request
+            500: self.handle_response_500,
+            # occurred during a high load of GitHub API and
+            # returned the correct result in case of repeating the same request
             502: self.handle_response_502,
+            # occurred during a high load of GitHub API and
+            # returned the correct result in case of repeating the same request
             503: self.handle_response_503
         }
         return result
 
+    # occurred during a high load of GitHub API and
+    # returned the correct result in case of repeating the same request
     async def handle_response_202(self, **kwargs):
         return True
 
+    # returned only in cases of invalid GitHub Token
     async def handle_response_401(self, resp, **kwargs):
         raise BadToken(
             "Your GitHub token is not valid. Github returned err validation code!\n"
@@ -77,6 +94,7 @@ class GithubAPI(AbstractAPI):
             f"Response:\n{await resp.json()}"
         )
 
+    # returned in cases of exceeding secondary or primary token rate limits
     async def handle_response_403(self, resp, **kwargs):
         resp_json = await resp.json()
         if isinstance(resp_json, dict):
@@ -87,6 +105,7 @@ class GithubAPI(AbstractAPI):
         await self.handle_unpredicted_response(resp=resp, **kwargs)
         return False
 
+    # occurred in case of incorrect URL or deleted GitHub page
     async def handle_response_404(self, url, resp, **kwargs):
         raise PageNotFound(
             "Error, 404 status!\n"
@@ -96,13 +115,23 @@ class GithubAPI(AbstractAPI):
             f"Response:\n{await resp.json()}"
         )
 
+    # occurred rarely when exceeding the primary token rate limit
     async def handle_response_429(self, resp, **kwargs):
         resp_json = await resp.json()
         raise TokenExceededRateLimit(f"{resp_json}")
 
+    # occurred during a high load of GitHub API and
+    # returned the correct result in case of repeating the same request
+    async def handle_response_500(self, **kwargs):
+        return True
+
+    # occurred during a high load of GitHub API and
+    # returned the correct result in case of repeating the same request
     async def handle_response_502(self, **kwargs):
         return True
 
+    # occurred during a high load of GitHub API and
+    # returned the correct result in case of repeating the same request
     async def handle_response_503(self, **kwargs):
         return True
 
