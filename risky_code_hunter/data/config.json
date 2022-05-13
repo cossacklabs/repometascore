@@ -10,6 +10,7 @@
       "rules": [
         {
           "triggers": [
+            "\uD83C\uDDF7\uD83C\uDDFA",
             ".ru",
             "-ru",
             "ru-",
@@ -221,6 +222,7 @@
             "elista",
             "engels",
             "ertil",
+            "ekaterinburg",
             "fatezh",
             "fokino",
             "fokino",
@@ -777,6 +779,9 @@
             "safonovo",
             "saint petersburg",
             "petersburg",
+            "peterburg",
+            "-petersburg",
+            "-peterburg",
             "piter",
             "salair",
             "salavat",
@@ -2266,7 +2271,7 @@
             "рф"
           ],
           "type": "Weak",
-          "risk_value": 1.0
+          "risk_value": 0.1
         }
       ]
     },
@@ -2318,6 +2323,9 @@
       "rules": [
         {
           "triggers": [
+            "rusia",
+            "russky",
+            "rossia",
             "russia",
             "rossiya",
             "rambler",
@@ -2334,7 +2342,7 @@
             "rf"
           ],
           "type": "Weak",
-          "risk_value": 1.0
+          "risk_value": 0.1
         }
       ]
     },
@@ -2343,6 +2351,9 @@
       "rules": [
         {
           "triggers": [
+            "rusia",
+            "russky",
+            "rossia",
             "russia",
             "rossiya",
             "rambler",
@@ -2359,7 +2370,7 @@
             "rf"
           ],
           "type": "Weak",
-          "risk_value": 1.0
+          "risk_value": 0.1
         }
       ]
     },
@@ -2368,6 +2379,10 @@
       "rules": [
         {
           "triggers": [
+            "\uD83C\uDDF7\uD83C\uDDFA",
+            "rusia",
+            "russky",
+            "rossia",
             "russia",
             "rossiya",
             "rambler",
@@ -2384,7 +2399,7 @@
             "rf"
           ],
           "type": "Weak",
-          "risk_value": 1.0
+          "risk_value": 0.1
         }
       ]
     },
@@ -2393,6 +2408,10 @@
       "rules": [
         {
           "triggers": [
+            "\uD83C\uDDF7\uD83C\uDDFA",
+            "rusia",
+            "russky",
+            "rossia",
             "russia",
             "россия",
             "rossiya",
@@ -2412,7 +2431,7 @@
             "рф"
           ],
           "type": "Weak",
-          "risk_value": 1.0
+          "risk_value": 0.1
         }
       ]
     },
@@ -2421,6 +2440,7 @@
       "rules": [
         {
           "triggers": [
+            "\uD83C\uDDF7\uD83C\uDDFA",
             "russia",
             "россия",
             "rossiya",
@@ -2932,7 +2952,7 @@
             "рф"
           ],
           "type": "Weak",
-          "risk_value": 1.0
+          "risk_value": 0.1
         }
       ]
     },
@@ -2941,6 +2961,10 @@
       "rules": [
         {
           "triggers": [
+            "\uD83C\uDDF7\uD83C\uDDFA",
+            "rusia",
+            "russky",
+            "rossia",
             "russia",
             "россия",
             "rossiya",
@@ -2960,7 +2984,7 @@
             "рф"
           ],
           "type": "Weak",
-          "risk_value": 1.0
+          "risk_value": 0.1
         }
       ]
     }
