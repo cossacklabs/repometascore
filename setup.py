@@ -9,7 +9,7 @@ with open("LICENSE", "r") as fh:
 
 setuptools.setup(
     name="risky_code_hunter",
-    version="0.1.0",
+    version="0.2.0",
     author="Cossack Labs",
     author_email="dev@cossacklabs.com",
     description="Package to detect risky contributors into repository",
@@ -20,7 +20,11 @@ setuptools.setup(
         "Bug Tracker": "https://github.com/cossacklabs/risky-code-hunter/issues",
     },
     install_requires=[
-        "aiohttp~=3.8.1"
+        "aiohttp~=3.8.1",
+        # We are using current commit, because it is much fresher commit with updated whois servers (9 month newer)
+        # And it seems that author currently decided not to maintain his package (version 0.7.3 as of 10 May 2022)
+        "python-whois @ git+https://github.com/nicopapamichael/whois@939e05d#egg=python-whois",
+        "aiodns~=3.0.0"
     ],
     packages=setuptools.find_packages(),
     classifiers=[
