@@ -8,6 +8,7 @@ from .Contributor import Contributor
 from .RequestManager import RequestManager
 from .RiskyRepo import Repo
 from .TriggeredRule import TriggeredRule
+from .rules_check_mode import RULES_CHECK_MODE
 
 
 # https://github.com/repo_author/repo_name/ -> /repo_author/repo_name/ -> repo_author/repo_name -> repo_name
@@ -105,130 +106,199 @@ class RiskyCodeHunter:
     async def __check_contributor(self, contributor):
         for field in self.config['fields']:
             if field['name'].lower() == 'login':
-                await self.__check_contributor_login(contributor, field)
+                await self.__check_contributor_login(contributor, field, RULES_CHECK_MODE.SUB_STR)
             elif field['name'].lower() == 'location':
-                await self.__check_contributor_location(contributor, field)
+                await self.__check_contributor_location(contributor, field, RULES_CHECK_MODE.FULL_PHRASE)
             elif field['name'].lower() == 'emails':
-                await self.__check_contributor_emails(contributor, field)
+                await self.__check_contributor_emails(contributor, field, RULES_CHECK_MODE.SUB_STR)
             elif field['name'].lower() == 'twitter_username':
-                await self.__check_contributor_twitter_username(contributor, field)
+                await self.__check_contributor_twitter_username(contributor, field, RULES_CHECK_MODE.SUB_STR)
             elif field['name'].lower() == 'names':
-                await self.__check_contributor_names(contributor, field)
+                await self.__check_contributor_names(contributor, field, RULES_CHECK_MODE.SUB_STR)
             elif field['name'].lower() == 'company':
-                await self.__check_contributor_company(contributor, field)
+                await self.__check_contributor_company(contributor, field, RULES_CHECK_MODE.SUB_STR)
                 # sometimes, people leave their company names in bio field
-                await self.__check_contributor_bio(contributor, field)
+                # we need to check it as full phrase, in order to avoid false positives
+                # because some companies have names similar as english words
+                # company: ast <=> word: enthusiast
+                await self.__check_contributor_bio(contributor, field, RULES_CHECK_MODE.FULL_PHRASE)
             elif field['name'].lower() == 'blog':
-                await self.__check_contributor_blog(contributor, field)
+                await self.__check_contributor_blog(contributor, field, RULES_CHECK_MODE.SUB_STR)
             elif field['name'].lower() == 'bio':
-                await self.__check_contributor_bio(contributor, field)
+                await self.__check_contributor_bio(contributor, field, RULES_CHECK_MODE.SUB_STR)
         return contributor
 
-    async def __check_contributor_login(self, contributor: Contributor, field: Dict):
+    async def __check_contributor_login(
+            self, contributor: Contributor, field: Dict, mode: RULES_CHECK_MODE = RULES_CHECK_MODE.SUB_STR
+    ):
         trig_rule_list: List[TriggeredRule] = []
         login = contributor.login
-        trig_rule_list.extend(await self.__check_login_rules(login, field))
+        trig_rule_list.extend(await self.__check_login_rules(login, field, mode))
         contributor.add_triggered_rules(trig_rule_list)
 
-    async def __check_contributor_location(self, contributor: Contributor, field: Dict):
+    async def __check_contributor_location(
+            self, contributor: Contributor, field: Dict, mode: RULES_CHECK_MODE = RULES_CHECK_MODE.FULL_PHRASE
+    ):
         trig_rule_list: List[TriggeredRule] = []
         locations = contributor.location
-        trig_rule_list.extend(await self.__check_location_rules(locations, field))
+        trig_rule_list.extend(await self.__check_location_rules(locations, field, mode))
         contributor.add_triggered_rules(trig_rule_list)
 
-    async def __check_contributor_emails(self, contributor: Contributor, field: Dict):
+    async def __check_contributor_emails(
+            self, contributor: Contributor, field: Dict, mode: RULES_CHECK_MODE = RULES_CHECK_MODE.SUB_STR
+    ):
         trig_rule_list: List[TriggeredRule] = []
         emails = contributor.emails
-        trig_rule_list.extend(await self.__check_emails_rules(emails, field))
+        trig_rule_list.extend(await self.__check_emails_rules(emails, field, mode))
         contributor.add_triggered_rules(trig_rule_list)
 
-    async def __check_contributor_twitter_username(self, contributor: Contributor, field: Dict):
+    async def __check_contributor_twitter_username(
+            self, contributor: Contributor, field: Dict, mode: RULES_CHECK_MODE = RULES_CHECK_MODE.SUB_STR
+    ):
         trig_rule_list: List[TriggeredRule] = []
         twitter_username = contributor.twitter_username
-        trig_rule_list.extend(await self.__check_twitter_username_rules(twitter_username, field))
+        trig_rule_list.extend(await self.__check_twitter_username_rules(twitter_username, field, mode))
         contributor.add_triggered_rules(trig_rule_list)
 
-    async def __check_contributor_names(self, contributor: Contributor, field: Dict):
+    async def __check_contributor_names(
+            self, contributor: Contributor, field: Dict, mode: RULES_CHECK_MODE = RULES_CHECK_MODE.SUB_STR
+    ):
         trig_rule_list: List[TriggeredRule] = []
         names = contributor.names
-        trig_rule_list.extend(await self.__check_names_rules(names, field))
+        trig_rule_list.extend(await self.__check_names_rules(names, field, mode))
         contributor.add_triggered_rules(trig_rule_list)
 
-    async def __check_contributor_company(self, contributor: Contributor, field: Dict):
+    async def __check_contributor_company(
+            self, contributor: Contributor, field: Dict, mode: RULES_CHECK_MODE = RULES_CHECK_MODE.SUB_STR
+    ):
         trig_rule_list: List[TriggeredRule] = []
         company = contributor.company
-        trig_rule_list.extend(await self.__check_company_rules(company, field))
+        trig_rule_list.extend(await self.__check_company_rules(company, field, mode))
         contributor.add_triggered_rules(trig_rule_list)
 
-    async def __check_contributor_blog(self, contributor: Contributor, field: Dict):
+    async def __check_contributor_blog(
+            self, contributor: Contributor, field: Dict, mode: RULES_CHECK_MODE = RULES_CHECK_MODE.SUB_STR
+    ):
         trig_rule_list: List[TriggeredRule] = []
         blog = contributor.blog
-        trig_rule_list.extend(await self.__check_blog_rules(blog, field))
+        trig_rule_list.extend(await self.__check_blog_rules(blog, field, mode))
         contributor.add_triggered_rules(trig_rule_list)
 
-    async def __check_contributor_bio(self, contributor: Contributor, field: Dict):
+    async def __check_contributor_bio(
+            self, contributor: Contributor, field: Dict, mode: RULES_CHECK_MODE = RULES_CHECK_MODE.SUB_STR
+    ):
         trig_rule_list: List[TriggeredRule] = []
         bio = contributor.bio
-        trig_rule_list.extend(await self.__check_bio_rules(bio, field))
+        trig_rule_list.extend(await self.__check_bio_rules(bio, field, mode))
         contributor.add_triggered_rules(trig_rule_list)
 
     # Use default substring search
-    async def __check_login_rules(self, login, login_rules) -> List[TriggeredRule]:
-        return await self.__check_field_rules_substr(login.lower(), login_rules)
+    async def __check_login_rules(self, login, login_rules, mode: RULES_CHECK_MODE) -> List[TriggeredRule]:
+        if mode == mode.SUB_STR:
+            handler = self.__check_field_rules_substr
+        elif mode == mode.FULL_PHRASE:
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
+        return await handler(login.lower(), login_rules)
 
     # Only will trigger on same location name
     # Location names are being checked with extra spaces
-    async def __check_location_rules(self, locations, location_rules) -> List[TriggeredRule]:
+    async def __check_location_rules(self, locations, location_rules, mode: RULES_CHECK_MODE) -> List[TriggeredRule]:
         trig_rule_list: List[TriggeredRule] = []
+        if mode == mode.SUB_STR:
+            handler = self.__check_field_rules_substr
+        elif mode == mode.FULL_PHRASE:
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
         for location in locations:
-            trig_rule_list.extend(await self.__check_field_rules_location(location.lower(), location_rules))
+            trig_rule_list.extend(await handler(location.lower(), location_rules))
         return trig_rule_list
 
     # Use default substring search
-    async def __check_emails_rules(self, emails, email_rules) -> List[TriggeredRule]:
+    async def __check_emails_rules(self, emails, email_rules, mode: RULES_CHECK_MODE) -> List[TriggeredRule]:
         triggered_rules: List[TriggeredRule] = []
+        if mode == mode.SUB_STR:
+            handler = self.__check_field_rules_substr
+        elif mode == mode.FULL_PHRASE:
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
         for email in emails:
-            triggered_rules.extend(await self.__check_field_rules_substr(email.lower(), email_rules))
+            triggered_rules.extend(await handler(email.lower(), email_rules))
         return triggered_rules
 
     # Use default substring search
-    async def __check_twitter_username_rules(self, twitter_usernames, twitter_username_rules) -> List[TriggeredRule]:
+    async def __check_twitter_username_rules(
+            self, twitter_usernames, twitter_username_rules, mode: RULES_CHECK_MODE
+    ) -> List[TriggeredRule]:
         triggered_rules: List[TriggeredRule] = []
+        if mode == mode.SUB_STR:
+            handler = self.__check_field_rules_substr
+        elif mode == mode.FULL_PHRASE:
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
         for twitter_username in twitter_usernames:
-            triggered_rules.extend(
-                await self.__check_field_rules_substr(twitter_username.lower(), twitter_username_rules)
-            )
+            triggered_rules.extend(await handler(twitter_username.lower(), twitter_username_rules))
         return triggered_rules
 
     # Use default substring search
-    async def __check_names_rules(self, names, names_rules) -> List[TriggeredRule]:
+    async def __check_names_rules(self, names, names_rules, mode: RULES_CHECK_MODE) -> List[TriggeredRule]:
         triggered_rules: List[TriggeredRule] = []
+        if mode == mode.SUB_STR:
+            handler = self.__check_field_rules_substr
+        elif mode == mode.FULL_PHRASE:
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
         for name in names:
-            triggered_rules.extend(await self.__check_field_rules_substr(name.lower(), names_rules))
+            triggered_rules.extend(await handler(name.lower(), names_rules))
         return triggered_rules
 
     # Use default substring search
-    async def __check_company_rules(self, company, company_rules) -> List[TriggeredRule]:
-        return await self.__check_field_rules_substr(company.lower(), company_rules)
+    async def __check_company_rules(self, company, company_rules, mode: RULES_CHECK_MODE) -> List[TriggeredRule]:
+        if mode == mode.SUB_STR:
+            handler = self.__check_field_rules_substr
+        elif mode == mode.FULL_PHRASE:
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
+        return await handler(company.lower(), company_rules)
 
     # Use default substring search
-    async def __check_blog_rules(self, blog, blog_rules) -> List[TriggeredRule]:
-        return await self.__check_field_rules_substr(blog.lower(), blog_rules)
+    async def __check_blog_rules(self, blog, blog_rules, mode: RULES_CHECK_MODE) -> List[TriggeredRule]:
+        if mode == mode.SUB_STR:
+            handler = self.__check_field_rules_substr
+        elif mode == mode.FULL_PHRASE:
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
+        return await handler(blog.lower(), blog_rules)
 
     # Use default substring search
-    async def __check_bio_rules(self, bio, bio_rules) -> List[TriggeredRule]:
+    async def __check_bio_rules(self, bio, bio_rules, mode: RULES_CHECK_MODE) -> List[TriggeredRule]:
         triggered_rules: List[TriggeredRule] = []
+        if mode == mode.SUB_STR:
+            handler = self.__check_field_rules_substr
+        elif mode == mode.FULL_PHRASE:
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
         for biography in bio:
-            triggered_rules.extend(await self.__check_field_rules_substr(biography.lower(), bio_rules))
+            triggered_rules.extend(await handler(biography.lower(), bio_rules))
         return triggered_rules
 
-    async def __check_field_rules_location(self, value, field) -> List[TriggeredRule]:
+    async def __check_field_rules_full_phrase(self, value, field) -> List[TriggeredRule]:
         value_modified = self.compiled_regex_pattern.sub(" ", value)
         value_modified = ''.join((' ', value_modified, ' '))
         trig_rule_list: List[TriggeredRule] = []
         for rule in field['rules']:
             for trigger in rule['triggers']:
-                if f" {trigger} " in value_modified:
+                trigger_modified = self.compiled_regex_pattern.sub(" ", trigger)
+                trigger_modified = ''.join((' ', trigger_modified, ' '))
+                if trigger_modified in value_modified:
                     trig_rule = TriggeredRule(
                         field_name=field['name'],
                         type_verbal=rule['type'],
