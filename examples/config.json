@@ -11,6 +11,9 @@
         {
           "triggers": [
             "\uD83C\uDDF7\uD83C\uDDFA",
+            "regru-ru",
+            "regtime-ru",
+            "rd-su",
             ".ru",
             "-ru",
             "ru-",
@@ -2315,6 +2318,13 @@
           ],
           "type": "Considerable",
           "risk_value": 1.0
+        },
+        {
+          "triggers": [
+            ".su"
+          ],
+          "type": "Weak",
+          "risk_value": 0.3
         }
       ]
     },
@@ -2458,7 +2468,7 @@
             "alawar entertainment",
             "alfa group",
             "alfa-bank",
-            "all-russia state television and radio broadcasting company (vgtrk)",
+            "vgtrk",
             "almaz-antey",
             "alrosa",
             "apple inc. rus",
@@ -2495,7 +2505,7 @@
             "eksmo",
             "en+ group",
             "enel russia",
-            "energia (corporation)",
+            "energia",
             "er-telecom",
             "eurocement group",
             "euroset",
@@ -2638,6 +2648,7 @@
             "s7 airlines",
             "sakhalin energy",
             "sberbank of russia",
+            "skbkontur",
             "severstal",
             "shvabe holding",
             "siberian coal energy company",
@@ -2767,7 +2778,7 @@
             "волжанин",
             "вологодский механический завод",
             "волчок",
-            "всероссийская государственная телевизионная и радиовещательная компания (вгтрк)",
+            "вгтрк",
             "всмпо-ависма",
             "высокоточные комплексы",
             "газпром",
@@ -2902,6 +2913,7 @@
             "синкера",
             "система",
             "ситроникс",
+            "скбконтур",
             "сколково",
             "славнефть",
             "снс",
