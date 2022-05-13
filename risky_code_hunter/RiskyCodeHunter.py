@@ -195,29 +195,38 @@ class RiskyCodeHunter:
     # Use default substring search
     async def __check_login_rules(self, login, login_rules, mode: RULES_CHECK_MODE) -> List[TriggeredRule]:
         if mode == mode.SUB_STR:
-            return await self.__check_field_rules_substr(login.lower(), login_rules)
+            handler = self.__check_field_rules_substr
         elif mode == mode.FULL_PHRASE:
-            return await self.__check_field_rules_full_phrase(login.lower(), login_rules)
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
+        return await handler(login.lower(), login_rules)
 
     # Only will trigger on same location name
     # Location names are being checked with extra spaces
     async def __check_location_rules(self, locations, location_rules, mode: RULES_CHECK_MODE) -> List[TriggeredRule]:
         trig_rule_list: List[TriggeredRule] = []
+        if mode == mode.SUB_STR:
+            handler = self.__check_field_rules_substr
+        elif mode == mode.FULL_PHRASE:
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
         for location in locations:
-            if mode == mode.SUB_STR:
-                trig_rule_list.extend(await self.__check_field_rules_substr(location.lower(), location_rules))
-            elif mode == mode.FULL_PHRASE:
-                trig_rule_list.extend(await self.__check_field_rules_full_phrase(location.lower(), location_rules))
+            trig_rule_list.extend(await handler(location.lower(), location_rules))
         return trig_rule_list
 
     # Use default substring search
     async def __check_emails_rules(self, emails, email_rules, mode: RULES_CHECK_MODE) -> List[TriggeredRule]:
         triggered_rules: List[TriggeredRule] = []
+        if mode == mode.SUB_STR:
+            handler = self.__check_field_rules_substr
+        elif mode == mode.FULL_PHRASE:
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
         for email in emails:
-            if mode == mode.SUB_STR:
-                triggered_rules.extend(await self.__check_field_rules_substr(email.lower(), email_rules))
-            elif mode == mode.FULL_PHRASE:
-                triggered_rules.extend(await self.__check_field_rules_full_phrase(email.lower(), email_rules))
+            triggered_rules.extend(await handler(email.lower(), email_rules))
         return triggered_rules
 
     # Use default substring search
@@ -225,49 +234,60 @@ class RiskyCodeHunter:
             self, twitter_usernames, twitter_username_rules, mode: RULES_CHECK_MODE
     ) -> List[TriggeredRule]:
         triggered_rules: List[TriggeredRule] = []
+        if mode == mode.SUB_STR:
+            handler = self.__check_field_rules_substr
+        elif mode == mode.FULL_PHRASE:
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
         for twitter_username in twitter_usernames:
-            if mode == mode.SUB_STR:
-                triggered_rules.extend(
-                    await self.__check_field_rules_substr(twitter_username.lower(), twitter_username_rules)
-                )
-            elif mode == mode.FULL_PHRASE:
-                triggered_rules.extend(
-                    await self.__check_field_rules_full_phrase(twitter_username.lower(), twitter_username_rules)
-                )
+            triggered_rules.extend(await handler(twitter_username.lower(), twitter_username_rules))
         return triggered_rules
 
     # Use default substring search
     async def __check_names_rules(self, names, names_rules, mode: RULES_CHECK_MODE) -> List[TriggeredRule]:
         triggered_rules: List[TriggeredRule] = []
+        if mode == mode.SUB_STR:
+            handler = self.__check_field_rules_substr
+        elif mode == mode.FULL_PHRASE:
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
         for name in names:
-            if mode == mode.SUB_STR:
-                triggered_rules.extend(await self.__check_field_rules_substr(name.lower(), names_rules))
-            elif mode == mode.FULL_PHRASE:
-                triggered_rules.extend(await self.__check_field_rules_full_phrase(name.lower(), names_rules))
+            triggered_rules.extend(await handler(name.lower(), names_rules))
         return triggered_rules
 
     # Use default substring search
     async def __check_company_rules(self, company, company_rules, mode: RULES_CHECK_MODE) -> List[TriggeredRule]:
         if mode == mode.SUB_STR:
-            return await self.__check_field_rules_substr(company.lower(), company_rules)
+            handler = self.__check_field_rules_substr
         elif mode == mode.FULL_PHRASE:
-            return await self.__check_field_rules_full_phrase(company.lower(), company_rules)
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
+        return await handler(company.lower(), company_rules)
 
     # Use default substring search
     async def __check_blog_rules(self, blog, blog_rules, mode: RULES_CHECK_MODE) -> List[TriggeredRule]:
         if mode == mode.SUB_STR:
-            return await self.__check_field_rules_substr(blog.lower(), blog_rules)
+            handler = self.__check_field_rules_substr
         elif mode == mode.FULL_PHRASE:
-            return await self.__check_field_rules_full_phrase(blog.lower(), blog_rules)
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
+        return await handler(blog.lower(), blog_rules)
 
     # Use default substring search
     async def __check_bio_rules(self, bio, bio_rules, mode: RULES_CHECK_MODE) -> List[TriggeredRule]:
         triggered_rules: List[TriggeredRule] = []
+        if mode == mode.SUB_STR:
+            handler = self.__check_field_rules_substr
+        elif mode == mode.FULL_PHRASE:
+            handler = self.__check_field_rules_full_phrase
+        else:
+            raise Exception("No rules check mode was provided!")
         for biography in bio:
-            if mode == mode.SUB_STR:
-                triggered_rules.extend(await self.__check_field_rules_substr(biography.lower(), bio_rules))
-            elif mode == mode.FULL_PHRASE:
-                triggered_rules.extend(await self.__check_field_rules_full_phrase(biography.lower(), bio_rules))
+            triggered_rules.extend(await handler(biography.lower(), bio_rules))
         return triggered_rules
 
     async def __check_field_rules_full_phrase(self, value, field) -> List[TriggeredRule]:
