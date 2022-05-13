@@ -62,6 +62,7 @@ class GithubAPI(AbstractAPI):
             403: self.handle_response_403,
             404: self.handle_response_404,
             429: self.handle_response_429,
+            500: self.handle_response_500,
             502: self.handle_response_502,
             503: self.handle_response_503
         }
@@ -99,6 +100,9 @@ class GithubAPI(AbstractAPI):
     async def handle_response_429(self, resp, **kwargs):
         resp_json = await resp.json()
         raise TokenExceededRateLimit(f"{resp_json}")
+
+    async def handle_response_500(self, **kwargs):
+        return True
 
     async def handle_response_502(self, **kwargs):
         return True
