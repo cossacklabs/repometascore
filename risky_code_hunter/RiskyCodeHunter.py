@@ -116,6 +116,8 @@ class RiskyCodeHunter:
                 await self.__check_contributor_names(contributor, field)
             elif field['name'].lower() == 'company':
                 await self.__check_contributor_company(contributor, field)
+                # sometimes, people leave their company names in bio field
+                await self.__check_contributor_bio(contributor, field)
             elif field['name'].lower() == 'blog':
                 await self.__check_contributor_blog(contributor, field)
             elif field['name'].lower() == 'bio':
