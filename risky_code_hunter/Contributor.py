@@ -262,3 +262,11 @@ class Contributor:
         result['triggered_rules'] = triggered_rules
 
         return result
+
+    def add_triggered_rule(self, triggered_rule: TriggeredRule):
+        self.add_triggered_rules([triggered_rule])
+
+    def add_triggered_rules(self, triggered_rules: List[TriggeredRule]):
+        self.triggered_rules.extend(triggered_rules)
+        for triggered_rule in triggered_rules:
+            self.risk_rating += triggered_rule.risk_value
