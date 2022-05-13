@@ -42,7 +42,7 @@ pip3 install https://github.com/cossacklabs/risky-code-hunter/archive/main.zip
 
 1. [Follow GitHub guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) to create new personal access token. We recommend creating a new, clean, token without any permissions.
 
-2. Copy created token into a separate file, call it `token_file.txt`.
+2. Copy created token into a separate file, call it `token_file.txt`. If you want to extend the limitation of requests to GitHub API - you can create additional tokens from the **OTHER** GitHub account. And add it in the next line to `token_file.txt` 
 
 3. Run Risky Code Hunter with default config, point it to the repository-in-question and provide a path to your `token_file.txt`:
 
@@ -50,11 +50,12 @@ pip3 install https://github.com/cossacklabs/risky-code-hunter/archive/main.zip
 python3 -m risky_code_hunter --url https://github.com/yandex/yandex-tank --tokenfile token_file.txt
 ```
 
-4. The output is controlled by verbose parameter. By default, the verbose level is 0, which means the shortest  output. To control verbosity, use `-v` param:
+4. The output is controlled by verbose parameter. By default, the verbose level is 0, which means the shortest output. To control verbosity, use `-v` param:
    - nothing 	- verbose with level 0. Output only risk level and percentage.
    - `-v`   	- verbose with level 1. Additionally to the ‘zero’ level, output info about the program and commits, code delta, and contributors risk ratio.
    - `-vv`  	- verbose with level 2. Additionally to the previous level, output info about every risky contributor.
    - `-vvv` 	- verbose with level 3. Additionally outputs info about every contributor. Currently, it only works with `JSON`-type output.
+   - `-vvvv` 	- verbose with level 4. Additionally shows different log outputs of this program.
 
 Enjoy the output and make decision whether to use this repository for your project.
 
@@ -81,14 +82,14 @@ Configuration file should be a valid JSON file that contains a JSON dictionary.
 Variables that are used in the config file:
 
 ### Root
-| Variable              | Type         | Description                                                                                                                                                                             | 
-|-----------------------|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `risk_boundary_value` | `float`      | Used in Repo. Sets boundary value that helps us define whether we should consider contributors as risky or not. It compares the `Contributor.riskRating` value with the boundary value. |
-| `git_token`           | `str`        | Your GitHub token as string.                                                                                                                                                            |
-| `request_max_retries` | `int`        | Optional. Default `5`. It shows how often we should try to reconnect to some kinds of requests.                                                                                         |
-| `request_min_await`   | `float`      | Optional. Default `5.0`. Minimum wait time (in seconds) when a remote server responds with timeouts.                                                                                    |
-| `request_max_await`   | `float`      | Optional. Default `15.0`. Maximum wait time (in seconds) when a remote server responds with timeouts.                                                                                   |
-| `fields`              | `List[Dict]` | List of fields with rules. More details about this variable are in the next section.                                                                                                    |
+| Variable              | Type         | Description                                                                                                                                                                                                                             | 
+|-----------------------|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `risk_boundary_value` | `float`      | Used in Repo. Sets boundary value that helps us define whether we should consider contributors as risky or not. It compares the `Contributor.riskRating` value with the boundary value.                                                 |
+| `git_tokens`          | `List[str]`  | Your GitHub tokens as a list of strings. If you want to extend the limitation of requests to GitHub API - you can create additional tokens from the **OTHER** GitHub account. And add it as next `str` variable into `git_tokens` list. |
+| `request_max_retries` | `int`        | Optional. Default `5`. It shows how often we should try to reconnect to some kinds of requests.                                                                                                                                         |
+| `request_min_await`   | `float`      | Optional. Default `5.0`. Minimum wait time (in seconds) when a remote server responds with timeouts.                                                                                                                                    |
+| `request_max_await`   | `float`      | Optional. Default `15.0`. Maximum wait time (in seconds) when a remote server responds with timeouts.                                                                                                                                   |
+| `fields`              | `List[Dict]` | List of fields with rules. More details about this variable are in the next section.                                                                                                                                                    |
 
 ### Fields
 | Variable | Type         | Description                                                                                                                                                                                          | 
@@ -101,6 +102,13 @@ Variables that are used in the config file:
 | `triggers`   | `List[str]` | Currently this is a list of strings. The program takes data (strings) from the contributor class. Modifies it to a lowercase string. And then checks if data from contributors matches every trigger. |
 | `type`       | `str`       | Verbose string name that can help the user understand what type of rule has been detected (e.g. `Strong`, `Considerable`, `Weak`, etc.).                                                              |
 | `risk_value` | `float`     | This value accumulates to `Contributor.riskRating` variable. Also can be a negative one for some extra cases.                                                                                         |
+
+## Environmental Variables
+| Variable               | Type  | Description                                                                                                                                                                                                |
+|------------------------|-------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `HTTP_REQUEST_TIMEOUT` | `int` | Optional. Default `20`. Time (in seconds) of an HTTP connection timeouts.                                                                                                                                  |
+| `ALLOWED_TIME_TO_WAIT` | `int` | Optional. Default `12000`. Time (in seconds) shows how long should we wait for GitHub API token reset. If token reset time is longer than `ALLOWED_TIME_TO_WAIT` exception `NoTokensLeft` would be thrown. |
+
 ---
 
 # Next steps
@@ -123,3 +131,4 @@ This software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIO
 # Contributing
 
 Feel free to extend the configuration, rules, scoring and come back with PRs. Also, we are welcome contributions that aimed at automation: add to CICD, add to GitHub plugins, etc. 
+
