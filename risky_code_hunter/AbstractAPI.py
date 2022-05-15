@@ -87,7 +87,10 @@ class AbstractAPI(ABC):
                         continue
                     break
             except (asyncio.TimeoutError, aiohttp.client_exceptions.ClientConnectorError,
-                    aiohttp.client_exceptions.ServerDisconnectedError, aiohttp.client_exceptions.ClientOSError):
+                    aiohttp.client_exceptions.ServerDisconnectedError, aiohttp.client_exceptions.ClientOSError) \
+                    as exception:
+                self.print(f"AbstractAPI.request({method}, {url}, {params}, {data}, {headers})."
+                           f" Raised an exception: \n{exception}", verbose_level=4)
                 await self.request_limit_timeout_and_await(retry_num=retry)
                 continue
         return resp
