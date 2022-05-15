@@ -344,18 +344,19 @@ class GithubAPI(AbstractAPI):
             # Let's wait an additional 1.1 seconds as GitHub sometimes would not allow
             # To run at the same time with token reset
             sleep_duration = max(time_of_token_reset - int(time.time()), 1.0) + 1.1
-            # We are using 5 seconds to wait between prints, as it seems like optimal value between such prints
+            # We are waiting till token reset time, before printing new banner about awaiting reset time.
             self.print(
                 f"Let's wait till {datetime.datetime.fromtimestamp(time_of_token_reset)} and then back to work!",
                 f"Requests to GitHub will not be done in the next {datetime.timedelta(seconds=sleep_duration)} seconds",
                 signature="Let's wait till",
-                time_to_wait=5.0
+                time_to_wait=sleep_duration - 1.0
             )
             await asyncio.sleep(sleep_duration)
             # Randomization in the next method will allow us to make requests at slightly different time.
             await self.request_limit_timeout_and_await(5)
-            # We are using 5 seconds to wait between prints, as it seems like optimal value between such prints
-            self.print("GitHub's requests are running again!", signature="Running Again", time_to_wait=5.0)
+            # We are using 8 seconds to wait between prints, as it seems like optimal value between such prints
+            # sleep_duration + randomization would give us maximum of approximately 8 seconds delay
+            self.print("GitHub's requests are running again!", signature="Running Again", time_to_wait=8.0)
             return await self.get_random_token()
         return random.choice(remaining_tokens)
 
