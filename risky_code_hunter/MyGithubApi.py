@@ -81,10 +81,41 @@ class GithubAPI(AbstractAPI):
         }
         return result
 
-    # occurred during a high load of GitHub API and
+    # Can occur during a high load of GitHub API and
     # returned the correct result in case of repeating the same request
-    async def handle_response_202(self, **kwargs):
-        return True
+    # also can occur in some weird repositories as these:
+    # https://github.com/weiss/nsca-ng/graphs/contributors
+    # https://github.com/crazy-canux/icinga2.vim/graphs/contributors
+    # https://github.com/monitoring-plugins/monitoring-plugin-perl/graphs/contributors
+    # We can see how web browser tries to retry `stats` request infinitely.
+    # So if we get from GitHub 5 times of 202 response about some repository
+    # we will assume, that `stats` response from this repository is empty.
+    async def handle_response_202(self, resp: aiohttp.ClientResponse, url, **kwargs):
+        retry_202_num: int = 0
+        try:
+            is_result_present, cached_result = await self._cache.get_and_await(
+                f"{url} status code 202", create_new_awaitable=True
+            )
+        except asyncio.TimeoutError:
+            is_result_present = False
+        if is_result_present:
+            retry_202_lock = cached_result[1]
+            # we need to retrieve info once again
+            # because we could miss increment due to race conditions
+            # at the beginning of the method
+            async with retry_202_lock:
+                is_result_present, cached_result = await self._cache.get_and_await(
+                    f"{url} status code 202", create_new_awaitable=True
+                )
+                retry_202_num = cached_result[0]
+                if retry_202_num >= 5:
+                    return False
+                else:
+                    await self._cache.set(f"{url} status code 202", (retry_202_num + 1, retry_202_lock))
+                    return True
+        else:
+            await self._cache.set(f"{url} status code 202", (retry_202_num + 1, asyncio.Lock()))
+            return True
 
     # returned only in cases of invalid GitHub Token
     async def handle_response_401(self, resp, **kwargs):
