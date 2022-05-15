@@ -39,7 +39,7 @@ class Contributor:
     triggered_rules: List[TriggeredRule]
 
     # ignored domains for getting domain info method
-    __ignored_domains: Tuple
+    __ignored_domains: Tuple = ('about.me', 'linkedin.com', 'twitter.com', 'github.com', 'github.io', 'facebook.com')
 
     def __init__(self, input_dict=None):
         self.login = str()
@@ -59,7 +59,6 @@ class Contributor:
         self.triggered_rules = []
         if input_dict:
             self.add_value(input_dict)
-        self.__ignored_domains = ('about.me', 'linkedin.com', 'twitter.com', 'github.com', 'github.io', 'facebook.com')
         return
 
     # Get some dict with values
