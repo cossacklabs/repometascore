@@ -351,7 +351,13 @@ class GithubAPI(AbstractAPI):
                 signature="Let's wait till",
                 time_to_wait=5.0
             )
-            await asyncio.sleep(sleep_duration)
+            # We are doing while loop, because of computer (at least macOS) hibernation
+            # If we want to wait, for example 20 minutes. But our PC was in hibernation for 5 minutes.
+            # Real-life time of waiting would be `20 + 5 = 25` minutes
+            # So to avoid such prolongation, we would make 3 seconds sleeps and check if time
+            # of token reset has come or not
+            while time.time() <= time_of_token_reset:
+                await asyncio.sleep(3.0)
             # Randomization in the next method will allow us to make requests at slightly different time.
             await self.request_limit_timeout_and_await(5)
             # We are using 5 seconds to wait between prints, as it seems like optimal value between such prints
