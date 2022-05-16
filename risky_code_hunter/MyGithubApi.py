@@ -372,7 +372,7 @@ class GithubAPI(AbstractAPI):
                 raise NoTokensLeft("Every token is on long cooldown right now!")
             # Let's wait an additional 1.1 seconds as GitHub sometimes would not allow
             # To run at the same time with token reset
-            sleep_duration = max(time_of_token_reset - int(time.time()), 1.0) + 1.1
+            sleep_duration = max(float(time_of_token_reset) - time.time(), 1.0) + 1.1
             # We are using 5 seconds to wait between prints, as it seems like optimal value between such prints
             self.print(
                 f"Let's wait till {datetime.datetime.fromtimestamp(time_of_token_reset)} and then back to work!",
