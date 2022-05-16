@@ -2,7 +2,7 @@
 
 Use RepoMetaScore (repository metadata scoring) to find risky projects in your dependency chain.
 
-![rch-github-logo](https://user-images.githubusercontent.com/2877920/167950182-7a436304-7480-4b8b-9492-35af4a7d7be6.png)
+![rch-github-logo](/pics/repometascore-logo-github.png)
 
 ---
 
