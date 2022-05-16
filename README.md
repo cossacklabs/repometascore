@@ -1,6 +1,6 @@
-# Risky Code Hunter
+# RepoMetaScore
 
-Detect risky projects in your dependency chain.
+Use RepoMetaScore (repository metadata scoring) to find risky projects in your dependency chain.
 
 ![rch-github-logo](https://user-images.githubusercontent.com/2877920/167950182-7a436304-7480-4b8b-9492-35af4a7d7be6.png)
 
@@ -12,13 +12,13 @@ This package helps to prevent supply chain risks by analyzing _metadata_ about t
 
 Open-source maintainers weaponize their projects by introducing backdoors and vulnerabilities in the source code. Aside from being led by criminal and activist motivations, maintainers who live in regions with oppressive governments might be forced to introduce backdoors involuntarily. 
 
-Risky Code Hunter analyses the given repository, collects information about its maintainers and contributors, and outputs the "risk rating". All info about contributors is collected through the official GitHub API, and other public sources, and is solely based on the information users provide in their accounts.
+RepoMetaScore analyses the given repository, collects information about its maintainers and contributors, and outputs the "risk rating". All info about contributors is collected through the official GitHub API, and other public sources, and is solely based on the information users provide in their accounts.
 
 ## How it works
 
 You install the package, provide a link to the repository-in-question and check the output. The output contains risk ratings and info about each contributor. You decide whether to use the repository in your product.
 
-The default configuration uses a growing list of criteria to identify potentially problematic repositories: maintainers’ GitHub and Twitter profiles, location, commit history, email domain, etc. Use Risky Code Hunter as a manual tool for one-time check, or change it to be a part of your CICD pipeline.
+The default configuration uses a growing list of criteria to identify potentially problematic repositories: maintainers’ GitHub and Twitter profiles, location, commit history, email domain, etc. Use RepoMetaScore as a manual tool for one-time check, or change it to be a part of your CICD pipeline.
 
 ⚠️ _The configurations are rather raw and still work in progress. Feel free to contribute!_
 
@@ -27,15 +27,15 @@ The default configuration uses a growing list of criteria to identify potentiall
 
 Requirements: Debian, Ubuntu, or Mac. Python 3.8+ installed.
 
-Install Risky Code Hunter via pip:
+Install RepoMetaScore via pip:
 
 ```
-pip3 install git+https://github.com/cossacklabs/risky-code-hunter.git@release 
+pip3 install git+https://github.com/cossacklabs/repometascore.git@release 
 ```
 
 or alternatively as zip:
 ```
-pip3 install https://github.com/cossacklabs/risky-code-hunter/archive/release.zip 
+pip3 install https://github.com/cossacklabs/repometascore/archive/release.zip 
 ```
 
 ℹ️ _In order to get latest stable, download product from `release` branch, to get latest working version, use `main` branch._
@@ -47,10 +47,10 @@ pip3 install https://github.com/cossacklabs/risky-code-hunter/archive/release.zi
 
 2. Copy created token into a separate file, call it `token_file.txt`. If you want to extend the limitation of requests to GitHub API - you can create additional tokens from the **OTHER** GitHub account. And add it in the next line to `token_file.txt` 
 
-3. Run Risky Code Hunter with default config, point it to the repository-in-question and provide a path to your `token_file.txt`:
+3. Run RepoMetaScore with default config, point it to the repository-in-question and provide a path to your `token_file.txt`:
 
 ```
-python3 -m risky_code_hunter --url https://github.com/yandex/yandex-tank --tokenfile token_file.txt
+python3 -m repometascore --url https://github.com/yandex/yandex-tank --tokenfile token_file.txt
 ```
 
 4. The output is controlled by verbose parameter. By default, the verbose level is 0, which means the shortest output. To control verbosity, use `-v` param:
@@ -66,14 +66,14 @@ Enjoy the output and make decision whether to use this repository for your proje
 
 You can create your own configuration with specific rules in it, and specific your GitHub security token in that configuration file.
 
-1. Copy the default configuration file [config.json](https://github.com/cossacklabs/risky-code-hunter/blob/main/examples/config.json).
+1. Copy the default configuration file [config.json](https://github.com/cossacklabs/repometascore/blob/main/examples/config.json).
 
 2. Update `git_token` value to have your GitHub token: `"git_token": "ghp_KvDv..."`
 
-3. Run Risky Code Hunter with your config:
+3. Run RepoMetaScore with your config:
 
 ```
-python3 -m risky_code_hunter --url https://github.com/yandex/yandex-tank --config config.json
+python3 -m repometascore --url https://github.com/yandex/yandex-tank --config config.json
 ```
 
 ---
@@ -125,7 +125,7 @@ Variables that are used in the config file:
 
 # License
 
-"Risky Code Hunter" is distributed under the terms of the Apache License (Version 2.0).
+"RepoMetaScore" is distributed under the terms of the Apache License (Version 2.0).
 
 This software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 
