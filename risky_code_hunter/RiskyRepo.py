@@ -170,12 +170,18 @@ class Repo:
     def __get_score(self) -> Tuple[float, str]:
         risky_score: float
         verbal_score: str
-        arithmetic_mean_from = [
-            self.__get_commits_ratio(),
-            self.__get_delta_ratio(),
-            self.__get_contributors_ratio()
-        ]
-        risky_score = statistics.mean(arithmetic_mean_from)
+        arithmetic_mean_from = []
+        if self.commits > 0:
+            arithmetic_mean_from.append(self.__get_commits_ratio())
+        if self.delta > 0:
+            arithmetic_mean_from.append(self.__get_delta_ratio())
+        if self.contributors_count > 0:
+            arithmetic_mean_from.append(self.__get_contributors_ratio())
+
+        if arithmetic_mean_from:
+            risky_score = statistics.mean(arithmetic_mean_from)
+        else:
+            risky_score = 0
 
         # This operation can bring us to 100+ percentage
         # Thus we need to get minimum of our score and 100 percents
