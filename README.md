@@ -30,13 +30,16 @@ Requirements: Debian, Ubuntu, or Mac. Python 3.8+ installed.
 Install Risky Code Hunter via pip:
 
 ```
-pip3 install git+https://github.com/cossacklabs/risky-code-hunter.git@main 
+pip3 install git+https://github.com/cossacklabs/risky-code-hunter.git@release 
 ```
 
 or alternatively as zip:
 ```
-pip3 install https://github.com/cossacklabs/risky-code-hunter/archive/main.zip 
+pip3 install https://github.com/cossacklabs/risky-code-hunter/archive/release.zip 
 ```
+
+ℹ️ _In order to get latest stable, download product from `release` branch, to get latest working version, use `main` branch._
+
 
 ## Usage
 
@@ -84,7 +87,7 @@ Variables that are used in the config file:
 ### Root
 | Variable              | Type         | Description                                                                                                                                                                                                                             | 
 |-----------------------|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `risk_boundary_value` | `float`      | Used in Repo. Sets boundary value that helps us define whether we should consider contributors as risky or not. It compares the `Contributor.riskRating` value with the boundary value.                                                 |
+| `risk_boundary_value` | `float`      | Optional. Default `0.95`. Used in Repo. Sets boundary value that helps us define whether we should consider contributors as risky or not. It compares the `Contributor.riskRating` value with the boundary value.                       |
 | `git_tokens`          | `List[str]`  | Your GitHub tokens as a list of strings. If you want to extend the limitation of requests to GitHub API - you can create additional tokens from the **OTHER** GitHub account. And add it as next `str` variable into `git_tokens` list. |
 | `request_max_retries` | `int`        | Optional. Default `5`. It shows how often we should try to reconnect to some kinds of requests.                                                                                                                                         |
 | `request_min_await`   | `float`      | Optional. Default `5.0`. Minimum wait time (in seconds) when a remote server responds with timeouts.                                                                                                                                    |
