@@ -9,7 +9,7 @@ with open("LICENSE", "r") as fh:
 
 setuptools.setup(
     name="risky_code_hunter",
-    version="0.2.0",
+    version="0.3.0",
     author="Cossack Labs",
     author_email="dev@cossacklabs.com",
     description="Package to detect risky contributors into repository",
