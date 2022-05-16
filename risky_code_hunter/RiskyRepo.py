@@ -56,7 +56,7 @@ class Repo:
         self.risk_boundary_value = float()
         if not config:
             config = {}
-        self.risk_boundary_value = config.get('risk_boundary_value', 0.9)
+        self.risk_boundary_value = config.get('risk_boundary_value', 0.95)
         return
 
     def add_contributor(self, contributor: Contributor):
