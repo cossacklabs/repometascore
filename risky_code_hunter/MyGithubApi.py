@@ -90,31 +90,27 @@ class GithubAPI(AbstractAPI):
     # We can see how web browser tries to retry `stats` request infinitely.
     # So if we get from GitHub 5 times of 202 response about some repository
     # we will assume, that `stats` response from this repository is empty.
-    async def handle_response_202(self, resp: aiohttp.ClientResponse, url, **kwargs):
-        retry_202_num: int = 0
+    async def handle_response_202(self, resp: aiohttp.ClientResponse, url: str, **kwargs):
+        retry_202_counter: int = 0
         try:
-            is_result_present, cached_result = await self._cache.get_and_await(
-                f"{url} status code 202", create_new_awaitable=True
+            is_result_present, retry_202_lock = await self._cache.get_and_await(
+                f"{url} status code 202 lock", create_new_awaitable=True
             )
         except asyncio.TimeoutError:
             is_result_present = False
         if is_result_present:
-            retry_202_lock = cached_result[1]
-            # we need to retrieve info once again
-            # because we could miss increment due to race conditions
-            # at the beginning of the method
             async with retry_202_lock:
-                is_result_present, cached_result = await self._cache.get_and_await(
-                    f"{url} status code 202", create_new_awaitable=True
+                is_result_present, retry_202_counter = await self._cache.get_and_await(
+                    f"{url} status code 202 counter", create_new_awaitable=True
                 )
-                retry_202_num = cached_result[0]
-                if retry_202_num >= 5:
+                if retry_202_counter >= 5:
                     return False
                 else:
-                    await self._cache.set(f"{url} status code 202", (retry_202_num + 1, retry_202_lock))
+                    await self._cache.set(f"{url} status code 202 counter", retry_202_counter + 1)
                     return True
         else:
-            await self._cache.set(f"{url} status code 202", (retry_202_num + 1, asyncio.Lock()))
+            await self._cache.set(f"{url} status code 202 lock", asyncio.Lock())
+            await self._cache.set(f"{url} status code 202 counter", retry_202_counter + 1)
             return True
 
     # returned only in cases of invalid GitHub Token
