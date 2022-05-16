@@ -2,11 +2,11 @@ import asyncio
 from typing import List, Dict, Set, Tuple
 from urllib.parse import urlparse
 
-from .DomainInfo import DomainInfo
-from .MyGithubApi import GithubAPI
-from .RequestManager import RequestManager
-from .TriggeredRule import TriggeredRule
-from .TwitterAPI import TwitterAPI
+from .domain_info import DomainInfo
+from .github_api import GithubAPI
+from .request_manager import RequestManager
+from .triggered_rule import TriggeredRule
+from .twitter_api import TwitterAPI
 
 
 class Contributor:

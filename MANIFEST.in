@@ -1,2 +1,2 @@
 include LICENSE
-recursive-include risky_code_hunter/data/ *
+recursive-include repometascore/data/ *

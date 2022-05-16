@@ -5,8 +5,8 @@ import os
 import time
 from typing import List, Tuple
 
-from risky_code_hunter.RiskyCodeHunter import RiskyCodeHunter
-from risky_code_hunter.RiskyRepo import Repo
+from repometascore.RepoMetaScore import RepoMetaScore
+from repometascore.risky_repo import Repo
 
 
 async def main():
@@ -56,7 +56,7 @@ async def main():
         except FileNotFoundError:
             raise Exception("Wrong file with urls has been provided!")
 
-    risky_code_hunter = RiskyCodeHunter(config=args.config, git_tokens=git_tokens, verbose=args.verbose)
+    risky_code_hunter = RepoMetaScore(config=args.config, git_tokens=git_tokens, verbose=args.verbose)
 
     repos_result_list: List[Tuple[bool, Repo]]
 

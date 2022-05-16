@@ -4,8 +4,8 @@ from typing import Dict
 
 import aiohttp
 
-from .AbstractAPI import AbstractAPI
 from .HTTP_METHOD import HTTP_METHOD
+from .abstract_api import AbstractAPI
 
 
 class TwitterAPI(AbstractAPI):

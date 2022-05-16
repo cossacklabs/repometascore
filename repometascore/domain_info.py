@@ -8,7 +8,7 @@ import aiodns
 import pycares
 import whois
 
-from .AbstractAPI import AbstractAPI
+from .abstract_api import AbstractAPI
 
 # set function defaults
 # def whois(self, query, hostname, flags, many_results=False, quiet=False) =>
