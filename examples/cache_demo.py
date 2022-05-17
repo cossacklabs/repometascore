@@ -1,7 +1,7 @@
 import asyncio
 import time
 
-from risky_code_hunter.cache import Cache
+from repometascore.cache import Cache
 
 
 async def add_after_5sec_sleep(cache, id):

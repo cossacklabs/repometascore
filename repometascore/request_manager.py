@@ -3,9 +3,9 @@ from typing import Dict
 
 import aiohttp
 
-from .DomainInfo import DomainInfo
-from .MyGithubApi import GithubAPI
-from .TwitterAPI import TwitterAPI
+from .domain_info import DomainInfo
+from .github_api import GithubAPI
+from .twitter_api import TwitterAPI
 
 
 class RequestManager:

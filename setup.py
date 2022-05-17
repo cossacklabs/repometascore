@@ -8,16 +8,16 @@ with open("LICENSE", "r") as fh:
     license_file = fh.read()
 
 setuptools.setup(
-    name="risky_code_hunter",
+    name="repometascore",
     version="0.3.0",
     author="Cossack Labs",
     author_email="dev@cossacklabs.com",
-    description="Package to detect risky contributors into repository",
+    description="Use RepoMetaScore (repository metadata scoring) to find risky projects in your dependency chain.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/cossacklabs/risky-code-hunter",
+    url="https://github.com/cossacklabs/repometascore",
     project_urls={
-        "Bug Tracker": "https://github.com/cossacklabs/risky-code-hunter/issues",
+        "Bug Tracker": "https://github.com/cossacklabs/repometascore/issues",
     },
     install_requires=[
         "aiohttp~=3.8.1",

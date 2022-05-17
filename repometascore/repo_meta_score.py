@@ -4,11 +4,11 @@ import re
 from typing import List, Dict, Tuple, Iterable
 from urllib.parse import urlparse
 
-from .Contributor import Contributor
-from .RequestManager import RequestManager
-from .RiskyRepo import Repo
-from .TriggeredRule import TriggeredRule
-from .rules_check_mode import RULES_CHECK_MODE
+from .constants import RULES_CHECK_MODE
+from .contributor import Contributor
+from .request_manager import RequestManager
+from .risky_repo import Repo
+from .triggered_rule import TriggeredRule
 
 
 # https://github.com/repo_author/repo_name/ -> /repo_author/repo_name/ -> repo_author/repo_name -> repo_name
@@ -21,7 +21,7 @@ def get_repo_author(repo_url) -> str:
     return str(urlparse(repo_url).path).strip('/').split('/')[0]
 
 
-class RiskyCodeHunter:
+class RepoMetaScore:
     repo_list: List[Repo]
     request_manager: RequestManager
     verbose: int

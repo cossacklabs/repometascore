@@ -2,8 +2,8 @@ import json
 import statistics
 from typing import List, Dict, Tuple
 
-from .Contributor import Contributor
-from .RequestManager import RequestManager
+from .contributor import Contributor
+from .request_manager import RequestManager
 
 
 class Repo:
