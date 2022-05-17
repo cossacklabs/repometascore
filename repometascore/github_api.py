@@ -8,8 +8,8 @@ from typing import Dict, List
 
 import aiohttp
 
-from .HTTP_METHOD import HTTP_METHOD
 from .abstract_api import AbstractAPI
+from .constants import HTTP_METHOD
 
 
 class BadToken(Exception):

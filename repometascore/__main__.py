@@ -5,7 +5,7 @@ import os
 import time
 from typing import List, Tuple
 
-from repometascore.RepoMetaScore import RepoMetaScore
+from repometascore.repo_meta_score import RepoMetaScore
 from repometascore.risky_repo import Repo
 
 

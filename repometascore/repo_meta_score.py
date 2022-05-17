@@ -4,7 +4,7 @@ import re
 from typing import List, Dict, Tuple, Iterable
 from urllib.parse import urlparse
 
-from .RULES_CHECK_MODE import RULES_CHECK_MODE
+from .constants import RULES_CHECK_MODE
 from .contributor import Contributor
 from .request_manager import RequestManager
 from .risky_repo import Repo
