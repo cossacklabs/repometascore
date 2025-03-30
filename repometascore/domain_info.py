@@ -116,6 +116,11 @@ class DomainInfo(AbstractAPI):
                 for pattern in pattern_list:
                     if pattern in key:
                         result.append(value)
+        # add name_servers, because some yandex ns servers can be in Europe
+        # salimonov.com is a good example
+        if whois_res.name_servers:
+            for ns in whois_res.name_servers:
+                result.append(ns)
         return result
 
     async def get_ip_by_domain(self, domain):
