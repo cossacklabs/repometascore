@@ -43,7 +43,12 @@ class DomainInfo(AbstractAPI):
 
     @staticmethod
     def get_domain(url) -> str:
-        return str(urlparse(url).hostname).lower()
+        # if the url without https or http
+        # return the string as is
+        res = str(urlparse(url).hostname).lower()
+        if res == 'none':
+            res = url.lower()
+        return res
 
     async def get_domain_info(self, domain: str) -> Dict:
         domain = self.get_domain(domain)
