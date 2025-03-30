@@ -1,3 +1,29 @@
 [build-system]
-requires = ["setuptools>=42"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "repometascore"
+version = "0.3.1"
+description = "Use RepoMetaScore (repository metadata scoring) to find risky projects in your dependency chain."
+readme = "README.md"
+requires-python = ">=3.13"
+license = { text = "Apache Software License" }
+authors = [
+  { name = "Cossack Labs", email = "dev@cossacklabs.com" }
+]
+urls = { Homepage = "https://github.com/cossacklabs/repometascore", Bug_Tracker = "https://github.com/cossacklabs/repometascore/issues" }
+dependencies = [
+  "aiohttp~=3.11.14",
+  "python-whois~=0.9.5",
+  "aiodns~=3.2.0"
+]
+classifiers = [
+  "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent"
+]
+
+[tool.setuptools]
+packages = ["repometascore"]
+include-package-data = true
