@@ -101,11 +101,7 @@ class DomainInfo(AbstractAPI):
         return result
 
     def get_location_info_from_whois(self, whois_res: whois.WhoisEntry) -> List:
-        if isinstance(whois_res, whois.WhoisEntry):
-            pass
-        elif isinstance(whois_res, whois.dict):
-            pass
-        else:
+        if not isinstance(whois_res, whois.WhoisEntry):
             return []
         pattern_list = [
             'address',
