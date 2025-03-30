@@ -10,11 +10,6 @@ import whois
 
 from .abstract_api import AbstractAPI
 
-# set function defaults
-# def whois(self, query, hostname, flags, many_results=False, quiet=False) =>
-#   => def whois(self, query, hostname, flags, many_results=False, quiet=True)
-whois.NICClient.whois.__defaults__ = (False, True)
-
 
 def async_wrap(func):
     @wraps(func)
