@@ -3,17 +3,21 @@ import json
 from typing import Dict
 
 import aiohttp
+import bs4
 
 from .abstract_api import AbstractAPI
 from .constants import HTTP_METHOD
+from .x_client_transaction import ClientTransaction
 
 
 class TwitterAPI(AbstractAPI):
+    x_client_transaction: str
     twitter_guest_token: str
 
     def __init__(self, session: aiohttp.ClientSession = None, config: Dict = None, verbose: int = 0):
         super().__init__(session=session, config=config, verbose=verbose)
         self.twitter_guest_token = str()
+        self.x_client_transaction = ""
 
     def create_response_handlers(self) -> Dict:
         result = {
@@ -30,6 +34,18 @@ class TwitterAPI(AbstractAPI):
             return True
         self.print("Getting twitter guest token")
         self.twitter_guest_token = await self.get_twitter_guest_token()
+        # add unnecessary timeouts here to avoid potential problems with rate limits
+        await asyncio.sleep(0.5)
+
+        response = await self.get_twitter_home_page()
+        await asyncio.sleep(0.5)
+        ct = ClientTransaction(response, self)
+        await asyncio.sleep(0.5)
+        await ct.init_keys()
+
+        method = "GET"
+        path = "/graphql/32pL5BWe9WKeSK1MoPvFQQ/UserByScreenName"
+        self.x_client_transaction = ct.generate_transaction_id(method=method, path=path)
         self.print("Successfully retrieved twitter guest token")
         return True
 
@@ -50,6 +66,20 @@ class TwitterAPI(AbstractAPI):
 
     async def handle_response_429(self, resp, **kwargs):
         return True
+
+    # To get Twitter home page. There is a key hidden in this page
+    # Without this key we cannot create x_transaction_id and retrieve info from twitter
+    # Headers must have a valid user-agent
+    # Let's use Chrome/128 as user-agent (currently (April 2025) minimum supported is Chrome/109)
+    async def get_twitter_home_page(self) -> bs4.BeautifulSoup:
+        response = await self.request(
+            method=HTTP_METHOD.GET,
+            url='https://twitter.com',
+            headers={"User-Agent": "Chrome/128"}
+        )
+        home_page = bs4.BeautifulSoup(await response.text(), 'lxml')
+        return home_page
+
 
     # To get Twitter guest token
     # we need to make request on special url and get + activate our
