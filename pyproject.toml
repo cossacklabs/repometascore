@@ -16,7 +16,9 @@ urls = { Homepage = "https://github.com/cossacklabs/repometascore", Bug_Tracker 
 dependencies = [
   "aiohttp~=3.11.14",
   "python-whois~=0.9.5",
-  "aiodns~=3.2.0"
+  "aiodns~=3.2.0",
+  "beautifulsoup4>=4.13.3",
+  "lxml>=5.3.1",
 ]
 classifiers = [
   "Programming Language :: Python :: 3.13",
