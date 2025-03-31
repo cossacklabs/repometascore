@@ -66,6 +66,8 @@ class AbstractAPI(ABC):
                     headers=headers,
                     params=params,
                     data=data,
+                    max_line_size=16000,
+                    max_field_size=16000
                 ) as resp:
                     resp_data = await resp.read()
                     response_handler = self._response_handlers.get(
