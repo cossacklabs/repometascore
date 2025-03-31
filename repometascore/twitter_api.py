@@ -56,13 +56,18 @@ class TwitterAPI(AbstractAPI):
             f"Response:\n{await resp.text()}"
         )
 
+
+    # With new API there is no way to distinguish (or I havent found it yet.
+    # TBH, I havent looked into the headers of responses)
+    # between ratelimit, wrong requests, wrong auth token or wrong x_client_transaction token
     async def handle_response_404(self, url, resp, **kwargs):
-        raise Exception(
-            "Error, 404 status!\n"
-            f"Cannot find info on such url: {url}\n"
-            f"Status code: {resp.status}\n"
-            f"Response:\n{await resp.text()}"
-        )
+        return True
+        #raise Exception(
+        #    "Error, 404 status!\n"
+        #    f"Cannot find info on such url: {url}\n"
+        #    f"Status code: {resp.status}\n"
+        #    f"Response:\n{await resp.text()}"
+        #)
 
     async def handle_response_429(self, resp, **kwargs):
         return True
@@ -168,6 +173,11 @@ class TwitterAPI(AbstractAPI):
     # }
     # more info about this twitter graphql API:
     # https://stackoverflow.com/questions/65502651/graphql-value-in-twitter-api
+    # UPD. April 2025
+    # Added required x-client-transaction-id to headers
+    # Added new features. Just copied them from the default twitter request intercept
+    # fieldToggles may be removed completely but, I don't know what it is, so
+    # we better keep it
     async def get_twitter_account_info(self, twitter_username) -> Dict:
         try:
             # set timeout to 120
@@ -178,19 +188,42 @@ class TwitterAPI(AbstractAPI):
             is_result_present = False
         if is_result_present:
             return cached_result
-        url = 'https://twitter.com/i/api/graphql/Bhlf1dYJ3bYCKmLfeEQ31A/UserByScreenName'
+        url = 'https://api.twitter.com/graphql/32pL5BWe9WKeSK1MoPvFQQ/UserByScreenName'
         headers = {
             'authorization': 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs'
                              '%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA',
-            'x-guest-token': self.twitter_guest_token
+            'x-guest-token': self.twitter_guest_token,
+            'x-client-transaction-id': self.x_client_transaction
         }
-        parameters = {'variables': json.dumps(
-            {
-                'screen_name': twitter_username,
-                'withSafetyModeUserFields': False,
-                'withSuperFollowsUserFields': False
-            }
-        )}
+        parameters = {
+            'variables': json.dumps(
+                {
+                    'screen_name': twitter_username
+                }
+            ),
+            'features': json.dumps(
+                {
+                    "hidden_profile_subscriptions_enabled": True,
+                    "profile_label_improvements_pcf_label_in_post_enabled": True,
+                    "rweb_tipjar_consumption_enabled": True,
+                    "responsive_web_graphql_exclude_directive_enabled": True,
+                    "verified_phone_label_enabled": False,
+                    "subscriptions_verification_info_is_identity_verified_enabled": True,
+                    "subscriptions_verification_info_verified_since_enabled": True,
+                    "highlights_tweets_tab_ui_enabled": True,
+                    "responsive_web_twitter_article_notes_tab_enabled": True,
+                    "subscriptions_feature_can_gift_premium": True,
+                    "creator_subscriptions_tweet_preview_api_enabled": True,
+                    "responsive_web_graphql_skip_user_profile_image_extensions_enabled": False,
+                    "responsive_web_graphql_timeline_navigation_enabled": True
+                }
+            ),
+            'fieldToggles': json.dumps(
+                {
+                    "withAuxiliaryUserLabels": True
+                }
+            )
+        }
         response = await self.request(method=HTTP_METHOD.GET, url=url, headers=headers, params=parameters)
         result = await response.json()
         await self._cache.set(twitter_username, result)
